@@ -9,6 +9,7 @@
     "@ethersproject/contracts": "^5.0.8",
     "@ethersproject/hash": "^5.0.9",
     "@ethersproject/providers": "^5.0.17",
+    "@openzeppelin/contracts": "^4.5.0",
     "@toruslabs/torus-embed": "^1.8.1",
     "@walletconnect/web3-provider": "^1.2.2",
     "authereum": "0.0.4-beta.201",
@@ -17,7 +18,6 @@
     "bitski": "^0.10.9",
     "blockies-ts": "^1.0.0",
     "ethereumjs-util": "^6.1.0",
-    "ethers": "^5.0.24",
     "fortmatic": "^0.8.2",
     "noty": "^3.2.0-beta",
     "prop-types": "^15.7.2",
@@ -35,6 +35,8 @@
     "eject": "react-scripts-ts eject"
   },
   "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@types/ethereumjs-util": "^5.2.0",
     "@types/jest": "^23.3.12",
     "@types/node": "^10.12.18",
@@ -43,6 +45,11 @@
     "@types/react-dom": "^16.9.8",
     "@types/styled-components": "4.1.8",
     "@types/web3": "^1.2.2",
+    "chai": "^4.3.6",
+    "ethereum-waffle": "^3.4.0",
+    "ethers": "^5.5.4",
+    "hardhat": "^2.9.1",
+    "solidity-coverage": "^0.7.20",
     "typescript": "3.2.2"
   },
   "browserslist": [

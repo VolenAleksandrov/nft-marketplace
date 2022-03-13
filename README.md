@@ -1,30 +1,15 @@
-# Web3 Boilerplate
+# Basic Sample Hardhat Project
 
-Web3 Boilerplate is an easy-to-use starting project to help developers add support for multiple providers in their apps with a simple customizable configuration and use ethers for contract interactions.
-By default Web3Modal Library supports injected providers like (Metamask, Dapper, Gnosis Safe, Frame, Web3 Browsers, etc) and WalletConnect, You can also easily configure the library to support Portis, Fortmatic, Squarelink, Torus, Authereum, D'CENT Wallet and Arkane.
+This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
 
-- [web3modal](https://github.com/Web3Modal/web3modal/)
-- [ethers](https://docs.ethers.io/v5/)
+Try running some of the following tasks:
 
-## Usage
-
-1. Install packages
-
-```bash
-npm install
-
-# OR
-
-yarn
+```shell
+npx hardhat accounts
+npx hardhat compile
+npx hardhat clean
+npx hardhat test
+npx hardhat node
+node scripts/sample-script.js
+npx hardhat help
 ```
-
-2. Start the app
-
-```bash
-npm run start
-
-# OR
-
-yarn start
-```
-
