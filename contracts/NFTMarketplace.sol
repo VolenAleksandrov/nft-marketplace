@@ -31,13 +31,29 @@ contract NFTMarketplace is Ownable {
         Cancelled
     }
 
+    enum MarketItemType {
+        FixedPrice,
+        Auction
+    }
+
+    struct Bid {
+        uint256 id;
+        address from;
+        uint256 marketItemId;
+        uint256 price;
+    }
+
     struct MarketItem {
-        uint256 itemId;
+        uint256 id;
         uint256 tokenId;
         address nftContract;
         address payable owner;
         uint256 price;
         MarketItemStatus status;
+        MarketItemType itemType;
+        uint256[] bidIds;
+        uint256 floorPrice;
+        uint256 hiestBidPrice;
     }
 
     struct Collection {
@@ -67,6 +83,7 @@ contract NFTMarketplace is Ownable {
     Counters.Counter private _soldMarketItemsCount;
     Counters.Counter private _canceledMarketItemsCount;
     Counters.Counter private _purchaseIds;
+    Counters.Counter private _bidIds;
 
     NFT internal nftContract;
 
@@ -81,11 +98,12 @@ contract NFTMarketplace is Ownable {
     mapping(uint256 => MarketItem) private _idToMarketItem;
     mapping(uint256 => Collection) private _idToCollection;
     mapping(uint256 => Purchase) private _idToPurchase;
+    mapping(uint256 => Purchase) private _idToBid;
     // Owner address to MarketItemId
     mapping(address => uint256[]) public ownerToMarketItems;
     mapping(uint256 => uint256) public marketItemToCollection;
-    
     mapping(uint256 => uint256) private _purchaseIdToCollectionId;
+    mapping(uint256 => Purchase) private _bidToMarketItem;
 
     constructor() {
         nftContract = new NFT(address(this));
@@ -243,7 +261,9 @@ contract NFTMarketplace is Ownable {
     function createNFTOfCollection(
         string memory tokenURI,
         uint256 collectionId,
-        uint256 price
+        uint256 price,
+        MarketItemType marketItemType,
+        uint256 floorPrice
     ) public returns (uint256 marketItemId) {
         uint256 tokenId = nftContract.createToken(tokenURI);
 
@@ -253,7 +273,9 @@ contract NFTMarketplace is Ownable {
             address(nftContract),
             msg.sender,
             msg.sender,
-            price
+            price,
+            marketItemType,
+            floorPrice
         );
 
         emit CollectionNFTMinted(marketItemId);
@@ -274,30 +296,48 @@ contract NFTMarketplace is Ownable {
         address nftContractAddress,
         address seller,
         address owner,
-        uint256 price
+        uint256 price,
+        MarketItemType listingType,
+        uint256 floorPrice
     ) public returns (uint256 marketItemId) {
         _marketItemIds.increment();
 
-        if (nftContractAddress != address(nftContract)) {
+        if (ERC721(nftContractAddress).getApproved(tokenId) != address(nftContract)) {
             ERC721(nftContractAddress).approve(seller, tokenId);
         }
+        
+        MarketItem memory marketItem;
+        
+        if (listingType == MarketItemType.FixedPrice) {
+            marketItem.id = _marketItemIds.current();
+            marketItem.tokenId = tokenId;
+            marketItem.nftContract = nftContractAddress;
+            marketItem.owner = payable(owner);
+            marketItem.price = price;
+            marketItem.status = MarketItemStatus.Active;
+            marketItem.itemType = MarketItemType.FixedPrice;
+            marketItem.floorPrice = 0;
+            marketItem.hiestBidPrice = 0;
+        }
+        else {
+            marketItem.id = _marketItemIds.current();
+            marketItem.tokenId = tokenId;
+            marketItem.nftContract = nftContractAddress;
+            marketItem.owner = payable(owner);
+            marketItem.price = price;
+            marketItem.status = MarketItemStatus.Active;
+            marketItem.itemType = MarketItemType.Auction;
+            marketItem.floorPrice = floorPrice;
+            marketItem.hiestBidPrice = 0;
+        }
 
-        MarketItem memory marketItem = MarketItem(
-            _marketItemIds.current(),
-            tokenId,
-            nftContractAddress,
-            payable(owner),
-            price,
-            MarketItemStatus.Active
-        );
-
-        _idToMarketItem[_marketItemIds.current()]= marketItem;
+        _idToMarketItem[_marketItemIds.current()] = marketItem;
 
         _addMarketItemToCollection(collectionId, marketItem);
 
         emit MarketItemListed(marketItemId, marketItem.owner, marketItem.price);
 
-        return marketItem.itemId;
+        return marketItem.id;
     }
 
     /// @notice : Add MarketItem to a collection
@@ -308,8 +348,8 @@ contract NFTMarketplace is Ownable {
         MarketItem memory marketItem
     ) private {
         Collection storage collection = _idToCollection[collectionId];
-        marketItemToCollection[marketItem.itemId] = collectionId;
-        collection.marketItems.push(marketItem.itemId);
+        marketItemToCollection[marketItem.id] = collectionId;
+        collection.marketItems.push(marketItem.id);
         if (collection.floorPrice > marketItem.price) {
             collection.floorPrice = marketItem.price;
         }
