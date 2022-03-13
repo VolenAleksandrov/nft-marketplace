@@ -70,19 +70,21 @@ contract NFTMarketplace is Ownable {
 
     NFT internal nftContract;
 
-    MarketItem[] public listedItems;
-    MarketItem[] public soldItems;
-    Collection[] public listedCollections;
-    MarketItem[] public marketItems;
-    Collection[] public collections;
-    Purchase[] public purchases;
+    // MarketItem[] public listedItems;
+    // MarketItem[] public soldItems;
+    // Collection[] public listedCollections;
+    // MarketItem[] public marketItems;
+    // Collection[] public collections;
+    // Purchase[] public purchases;
     address public martketplaceOwner;
     uint256 public marketplaceFee;
-
+    mapping(uint256 => MarketItem) private _idToMarketItem;
+    mapping(uint256 => Collection) private _idToCollection;
+    mapping(uint256 => Purchase) private _idToPurchase;
     // Owner address to MarketItemId
     mapping(address => uint256[]) public ownerToMarketItems;
     mapping(uint256 => uint256) public marketItemToCollection;
-    mapping(uint256 => Purchase) private _idToPurchase;
+    
     mapping(uint256 => uint256) private _purchaseIdToCollectionId;
 
     constructor() {
@@ -90,7 +92,7 @@ contract NFTMarketplace is Ownable {
     }
 
     function cancelMarketListing(uint256 marketItemId) public {
-        MarketItem storage marketItem = marketItems[marketItemId];
+        MarketItem storage marketItem = _idToMarketItem[marketItemId];
         marketItem.status = MarketItemStatus.Cancelled;
         ERC721(marketItem.nftContract).approve(address(0), marketItem.tokenId);
 
@@ -110,10 +112,10 @@ contract NFTMarketplace is Ownable {
         uint256 currentIndex = 0;
 
         MarketItem[] memory items = new MarketItem[](unsoldItemCount);
-        for (uint256 i = 0; i < itemCount; i++) {
-            if (marketItems[i + 1].status == MarketItemStatus.Active) {
+        for (uint256 i = 1; i < itemCount; i++) {
+            if (_idToMarketItem[i].status == MarketItemStatus.Active) {
                 uint256 currentId = i + 1;
-                MarketItem memory currentItem = marketItems[currentId];
+                MarketItem memory currentItem = _idToMarketItem[currentId];
                 items[currentIndex] = currentItem;
                 currentIndex += 1;
             }
@@ -122,16 +124,12 @@ contract NFTMarketplace is Ownable {
         return items;
     }
 
-    function getAllItems() public view returns (MarketItem[] memory) {
-        return marketItems;
-    }
-
     function getMarketItem(uint256 marketItemId)
         public
         view
         returns (MarketItem memory item)
     {
-        return marketItems[marketItemId];
+        return _idToMarketItem[marketItemId];
     }
 
     /// @notice : Return ids of all market items from collection
@@ -142,7 +140,7 @@ contract NFTMarketplace is Ownable {
         view
         returns (uint256[] memory marketItemIds)
     {
-        marketItemIds = collections[collectionId].marketItems;
+        marketItemIds = _idToCollection[collectionId].marketItems;
         return marketItemIds;
     }
 
@@ -155,7 +153,7 @@ contract NFTMarketplace is Ownable {
     }
 
     function buyMarketItem(uint256 marketItemId) public payable {
-        MarketItem storage item = marketItems[marketItemId];
+        MarketItem storage item = _idToMarketItem[marketItemId];
         require(
             msg.value == item.price,
             "Please submit the asking price in order to complete the purchase"
@@ -171,7 +169,7 @@ contract NFTMarketplace is Ownable {
         IERC721(nftContract).transferFrom(item.owner, msg.sender, item.tokenId);
 
         uint256 purchaseId = _createPurchase(item, msg.sender, msg.value);
-        collections[collectionId].purchases.push(purchaseId);
+        _idToCollection[collectionId].purchases.push(purchaseId);
         _soldMarketItemsCount.increment();
 
         emit MarketItemSold(marketItemId, item.owner, msg.sender, msg.value);
@@ -206,7 +204,7 @@ contract NFTMarketplace is Ownable {
         collection.owner = msg.sender;
         collection.fee = fee;
 
-        collections.push(collection);
+        _idToCollection[_collectionIds.current()] = collection;
 
         emit CollectionCreated(
             collection.id,
@@ -222,7 +220,7 @@ contract NFTMarketplace is Ownable {
         uint256 collectionId,
         string memory description
     ) external {
-        Collection storage collection = collections[collectionId];
+        Collection storage collection = _idToCollection[collectionId];
         require(
             msg.sender == collection.owner,
             "You are not the owner of the collection!"
@@ -293,7 +291,7 @@ contract NFTMarketplace is Ownable {
             MarketItemStatus.Active
         );
 
-        marketItems.push(marketItem);
+        _idToMarketItem[_marketItemIds.current()]= marketItem;
 
         _addMarketItemToCollection(collectionId, marketItem);
 
@@ -309,7 +307,7 @@ contract NFTMarketplace is Ownable {
         uint256 collectionId,
         MarketItem memory marketItem
     ) private {
-        Collection storage collection = collections[collectionId];
+        Collection storage collection = _idToCollection[collectionId];
         marketItemToCollection[marketItem.itemId] = collectionId;
         collection.marketItems.push(marketItem.itemId);
         if (collection.floorPrice > marketItem.price) {
