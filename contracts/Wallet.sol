@@ -23,11 +23,11 @@ contract Wallet is Ownable {
     }
 
     function withdraw(uint256 value) public {
-		require(value > 0, "You need to withdraw at least 1 wei");
-        require(_balances[msg.sender] >= value, "You need to have enought wei to withdraw!");
+		require(value > 0, "Marketplace: You need to withdraw at least 1 wei");
+        require(_balances[msg.sender] >= value, "Marketplace: You need to have enought wei to withdraw!");
 
         _balances[msg.sender] -= value;
-		payable(address(msg.sender)).transfer(value);
+		payable(msg.sender).transfer(value);
 
 		emit Withdraw(msg.sender, value);
 	}

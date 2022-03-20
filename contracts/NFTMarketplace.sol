@@ -30,8 +30,7 @@ contract NFTMarketplace is Wallet {
     enum ListingStatus {
         Active,
         Sold,
-        Cancelled,
-        Inactive
+        Cancelled
     }
 
     enum OfferStatus {
@@ -46,7 +45,7 @@ contract NFTMarketplace is Wallet {
         uint256 id;
         address nftContract;
         uint256 tokenId;
-        address owner;
+        // address owner;
         uint256 collectionId;
         uint256[] listings;
         uint256[] purchases;
@@ -94,8 +93,6 @@ contract NFTMarketplace is Wallet {
     Counters.Counter private _purchaseIds;
     Counters.Counter private _offerIds;
 
-    NFT internal nftContract;
-
     address public martketplaceOwner;
     uint256 collectedFees = 0;
     uint256 public marketplacePercentageFee;
@@ -105,7 +102,8 @@ contract NFTMarketplace is Wallet {
     mapping(uint256 => Purchase) private _idToPurchase;
     mapping(uint256 => Offer) private _idToOffer;
     mapping(uint256 => uint256) public marketItemToCollection;
-    // mapping(uint256 => uint256) private _purchaseIdToCollectionId;
+    mapping(address => uint256) private _userToOffersBalance;
+    mapping(address => uint256[]) private _userToOffers;
     mapping(address => mapping(uint256 => uint256))
         private _nftContractToItemIdToMarketItem;
 
@@ -138,20 +136,10 @@ contract NFTMarketplace is Wallet {
         MarketItem storage marketItem = _idToMarketItem[
             _nftContractToItemIdToMarketItem[nftContractAddress][tokenId]
         ];
-        if (marketItem.owner == address(0)) {
-            _marketItemIds.increment();
-            _idToMarketItem[_marketItemIds.current()] = MarketItem(
-                _marketItemIds.current(),
-                nftContractAddress,
-                tokenId,
-                msg.sender,
-                collectionId,
-                new uint256[](0),
-                new uint256[](0),
-                new uint256[](0)
-            );
+        if (marketItem.id == 0) {
+            marketItem = _createMarketItem(nftContractAddress, tokenId, collectionId);
+            _addMarketItemToCollection(collectionId, marketItem);
         } else {
-            marketItem.owner = msg.sender;
             _addMarketItemToCollection(collectionId, marketItem);
         }
 
@@ -174,8 +162,10 @@ contract NFTMarketplace is Wallet {
 
     function cancelListing(uint256 listingId) public {
         Listing storage listing = _idToListing[listingId];
-
-        require(listing.seller == msg.sender);
+        require(
+            listing.seller == msg.sender,
+            "Marketplace: You are not the owner of this listing!"
+        );
 
         listing.status = ListingStatus.Cancelled;
 
@@ -218,7 +208,12 @@ contract NFTMarketplace is Wallet {
             msg.value == listing.price,
             "Marketplace: Please submit the asking price in order to complete the purchase!"
         );
-        uint purchaseId = _sellItem(marketItem, marketItem.owner, msg.sender, listing.price);
+        uint256 purchaseId = _sellItem(
+            marketItem,
+            listing.seller,
+            msg.sender,
+            listing.price
+        );
 
         listing.buyer = msg.sender; // Set buyer
         listing.status = ListingStatus.Sold; // Set status
@@ -227,7 +222,12 @@ contract NFTMarketplace is Wallet {
         marketItem.purchases.push(purchaseId);
 
         _soldMarketItemsCount.increment();
-        emit MarketItemSold(marketItem.id, listing.seller, msg.sender, msg.value);
+        emit MarketItemSold(
+            marketItem.id,
+            listing.seller,
+            msg.sender,
+            msg.value
+        );
     }
 
     function createOffer(uint256 marketItemId)
@@ -240,9 +240,31 @@ contract NFTMarketplace is Wallet {
             ERC721(marketItem.nftContract).getApproved(marketItem.tokenId) ==
                 address(this),
             "Marketplace: This NFT has no approval for this contract!"
-        );
+        ); //TODO: May be not needed!
 
-        _balances[msg.sender] += msg.value;
+        _userToOffersBalance[msg.sender] += msg.value;
+        _offerIds.increment();
+
+        Offer memory offer = Offer(
+            _offerIds.current(),
+            msg.sender,
+            marketItem.id,
+            msg.value,
+            OfferStatus.Active
+        );
+        _idToOffer[offer.id] = offer;
+        _userToOffers[msg.sender].push(offer.id);
+
+        return offer.id;
+    }
+
+    function createOffer(address nftContract, uint256 tokenId)
+        public
+        payable
+        returns (uint256)
+    {
+        MarketItem memory marketItem = _createMarketItem(nftContract, tokenId, 0);
+        _userToOffersBalance[msg.sender] += msg.value;
         _offerIds.increment();
 
         Offer memory offer = Offer(
@@ -269,16 +291,16 @@ contract NFTMarketplace is Wallet {
         );
 
         payable(offer.offerer).transfer(offer.price); // Returns offered price to the offerer
-        _balances[offer.offerer] -= offer.price;
+        _userToOffersBalance[offer.offerer] -= offer.price;
 
         return offer.id;
     }
 
-    function acceptOffer(uint256 offerId) public {
+    function acceptOffer(uint256 offerId) public payable {
         Offer storage offer = _idToOffer[offerId];
         MarketItem storage marketItem = _idToMarketItem[offer.marketItemId];
         require(
-            _balances[offer.offerer] >= offer.price,
+            _userToOffersBalance[offer.offerer] >= offer.price,
             "Marketplace: Offerer has not enought money!"
         );
         require(
@@ -290,24 +312,37 @@ contract NFTMarketplace is Wallet {
                 msg.sender,
             "Marketplace: This NFT is not yours!"
         );
-        marketItem.owner = msg.sender; //TODO: Think of cases which this will be needed!!!
         require(
             ERC721(marketItem.nftContract).getApproved(marketItem.tokenId) ==
                 address(this),
             "Marketplace: This contract is not approver for this NFT!"
         );
-        uint256 purchaseId = _sellItem(marketItem, marketItem.owner, offer.offerer, offer.price);
+        uint256 purchaseId = _sellItem(
+            marketItem,
+            msg.sender,
+            offer.offerer,
+            offer.price
+        );
 
-        _balances[offer.offerer] -= offer.price;
+        _userToOffersBalance[offer.offerer] -= msg.value;
         offer.status = OfferStatus.Accepted;
-        
+
         _idToCollection[marketItem.collectionId].purchases.push(purchaseId);
         marketItem.purchases.push(purchaseId);
 
-        emit MarketItemSold(marketItem.id, msg.sender, marketItem.owner, offer.price);
+        emit MarketItemSold(
+            marketItem.id,
+            msg.sender,
+            offer.offerer,
+            offer.price
+        );
     }
 
-    function getItemPurchaseHistory(uint256 marketItemId) public view returns (uint256[] memory) {
+    function getItemPurchaseHistory(uint256 marketItemId)
+        public
+        view
+        returns (uint256[] memory)
+    {
         return _idToMarketItem[marketItemId].purchases;
     }
 
@@ -329,7 +364,14 @@ contract NFTMarketplace is Wallet {
         require(msg.sender != address(0));
 
         _collectionIds.increment();
-        Collection memory collection = Collection(_collectionIds.current(), name, description, msg.sender, new uint256[](0), new uint256[](0)); //TODO: = Collection(_collectionIds.current(), name, description, msg.sender);
+        Collection memory collection = Collection(
+            _collectionIds.current(),
+            name,
+            description,
+            msg.sender,
+            new uint256[](0),
+            new uint256[](0)
+        );
         collection.id = _collectionIds.current();
 
         collection.name = name;
@@ -371,6 +413,10 @@ contract NFTMarketplace is Wallet {
         return _collectionIds.current();
     }
 
+    function getCollection(uint256 collectionId) public view returns(Collection memory) {
+        return _idToCollection[collectionId];
+    }
+
     function getMarketItemsCounter() public view returns (uint256) {
         return _marketItemIds.current();
     }
@@ -379,22 +425,33 @@ contract NFTMarketplace is Wallet {
         return _listingIds.current();
     }
 
-    function _sellItem(MarketItem storage marketItem, address from, address to, uint256 price) private returns(uint256){
-        ERC721(nftContract).transferFrom(
-            from,
-            to,
-            marketItem.tokenId
-        ); // Transfer the NFT to the new owner
-        uint256 fee = _calculateMarketplaceFee(price);
-        payable(marketItem.owner).transfer(price - fee); // Payment to seller
-        marketItem.owner = to;
-
-        uint256 purchaseId = _createPurchase(
-            marketItem.id,
-            from,
-            to,
-            price
+    function _createMarketItem(address nftContract, uint256 tokenId, uint256 collectionId) private returns(MarketItem storage) {
+        _marketItemIds.increment();
+        _idToMarketItem[_marketItemIds.current()] = MarketItem(
+            _marketItemIds.current(),
+            nftContract,
+            tokenId,
+            collectionId,
+            new uint256[](0),
+            new uint256[](0),
+            new uint256[](0)
         );
+
+        return _idToMarketItem[_marketItemIds.current()];
+    }
+
+    function _sellItem(
+        MarketItem storage marketItem,
+        address from,
+        address to,
+        uint256 price
+    ) private returns (uint256) {
+        ERC721(marketItem.nftContract).transferFrom(from, to, marketItem.tokenId); // Transfer the NFT to the new owner
+        uint256 fee = _calculateMarketplaceFee(price);
+        payable(from).transfer(price - fee); // Payment to seller
+        // marketItem.owner = to;
+
+        uint256 purchaseId = _createPurchase(marketItem.id, from, to, price);
         return purchaseId;
     }
 

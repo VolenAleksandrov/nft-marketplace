@@ -13,25 +13,8 @@ contract NFT is ERC721URIStorage {
 
     Counters.Counter private _tokenIds;
 
-    address contractAddress;
-    struct MarketItem {
-        uint256 id;
-        address payable owner;
-        MarketItemStatus status;
-    }
-
-    enum MarketItemStatus {
-        Minted,
-        Active,
-        Sold,
-        Cancelled
-    }
-
-    mapping(uint => MarketItem) public tokenIdToMarketItem;
-
-    constructor(address marketplaceAddress) ERC721("Digital Marketplace", "DMP")
+    constructor() ERC721("Digital Marketplace", "DMP")
     {
-        contractAddress = marketplaceAddress;
     }
 
     /// @notice create a new token
@@ -39,10 +22,10 @@ contract NFT is ERC721URIStorage {
     function createToken(string memory tokenURI) public returns(uint256) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        tokenIdToMarketItem[newItemId] = MarketItem(newItemId, payable(msg.sender), MarketItemStatus.Minted);
+
         _safeMint(msg.sender, newItemId); //mint the token
         _setTokenURI(newItemId, tokenURI); //generate the URI
-        approve(contractAddress, newItemId); //grant transaction permission to marketplace
+        //approve(contractAddress, newItemId); //grant transaction permission to marketplace
         
         return newItemId;
     }
