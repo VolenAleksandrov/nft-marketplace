@@ -12,7 +12,8 @@
     "object-literal-sort-keys": false,
     "ordered-imports": false,
     "jsx-no-lambda": false,
-    "jsx-boolean-value": false
+    "jsx-boolean-value": false,
+    "no-console": false
   },
   "linterOptions": {
     "exclude": [
@@ -22,5 +23,8 @@
       "*.json",
       "**/*.json"
     ]
+  },
+  "jsRules": {
+    "no-console": false
   }
 }

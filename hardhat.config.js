@@ -13,10 +13,10 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 });
 
 task("deploy-local", "Deploys contracts on a local network")
-.setAction(async ({privateKey}) => {
-  const deployContracts = require("./scripts/deploy-local");
-  await deployContracts(privateKey);
-});
+  .setAction(async ({ privateKey }) => {
+    const deployContracts = require("./scripts/deploy-local");
+    await deployContracts(privateKey);
+  });
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
@@ -25,5 +25,11 @@ task("deploy-local", "Deploys contracts on a local network")
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
+  networks: {
+    hardhat: {
+      chainId: 1337
+    },
+  },
   solidity: "0.8.4",
+  
 };

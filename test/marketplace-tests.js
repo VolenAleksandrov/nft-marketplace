@@ -11,9 +11,11 @@ describe("Marketplace - list item buy item", function () {
         nftFactory = await ethers.getContractFactory("NFT");
         nft = await nftFactory.deploy();
         await nft.deployed();
+        console.log("nft addr: ", nft.address);
         marketplaceFactory = await ethers.getContractFactory("NFTMarketplace");
         marketplace = await marketplaceFactory.deploy();
         await marketplace.deployed();
+        console.log("marketplace addr: ", marketplace.address);
         const [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
         console.log("Owner: ", owner.address);
         console.log("Addr1: ",addr1.address);
@@ -29,22 +31,31 @@ describe("Marketplace - list item buy item", function () {
 
     it("Should create collection", async function () {
         const [owner, addr1] = await ethers.getSigners();
-        const createCollectionTx = await marketplace.connect(addr1).createNewCollection("collection1", "collection1desc");
+        const tx = await marketplace.connect(addr1).createNewCollection("collection1", "collection1desc");
+        console.log("tx: ", tx);
+        const tx1 = await marketplace.connect(addr1).createNewCollection("collection1", "collection1desc");
+        console.log("tx1: ", tx1);
+        // const tx = marketplace.createNewCollection("asd1", "asd1");
+        // console.log(2);
+        // const asd = await addr1.sendTransaction(tx);
+        // console.log(3);
+        console.log(await marketplace.getCollectionsCounter());
+        
         expect(await marketplace.getCollectionsCounter()).to.equal(1);
     });
 
     it("Should edit collection desc", async function () {
         const [owner, addr1] = await ethers.getSigners();
-        const editCollectionTx = await marketplace.connect(addr1).updateCollectionDescription(1, "collection1desc2");
+        const tx = await marketplace.connect(addr1).updateCollectionDescription(1, "collection1desc2");
         expect(await marketplace.getCollectionsCounter()).to.equal(1);
         const collection = await marketplace.getCollection(1);
-        expect(collection.description == "collection1desc2");
+        expect(collection.description === "collection1desc2");
     });
 
     it("Should create NFT", async function () {
         const tokenURL = "Sample URL";
         const [owner, addr1] = await ethers.getSigners();
-        const editCollectionTx = await nft.connect(addr1).createToken(tokenURL);
+        const tx = await nft.connect(addr1).createToken(tokenURL);
 
         expect(await nft.ownerOf(1)).to.equal(addr1.address);
         expect(await nft.getTokensCounter()).to.equal(1);
@@ -53,14 +64,14 @@ describe("Marketplace - list item buy item", function () {
 
     it("Should give approve to Marketplace contract", async function () {
         const [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
-        const editCollectionTx = await nft.connect(addr1).approve(marketplace.address, 1);
+        const tx = await nft.connect(addr1).approve(marketplace.address, 1);
 
         expect(await nft.getApproved(1)).to.equal(marketplace.address);
     });
 
     it("Should create listing", async function () {
         const [owner, addr1, addr2, addr3, addr4] = await ethers.getSigners();
-        const listItemTx = await marketplace.connect(addr1).createListing(1, 1, nft.address, ethers.utils.parseEther("1.0"));
+        const tx = await marketplace.connect(addr1).createListing(1, 1, nft.address, ethers.utils.parseEther("1.0"));
 
         const collectionItems = await marketplace.getAllItemsOfCollection(1);
         expect(ethers.utils.concat(collectionItems, collectionItems.length)[0]).to.equal(1);
@@ -80,7 +91,7 @@ describe("Marketplace - list item buy item", function () {
         const sellerBalanceBefore = ethers.utils.formatEther(await addr1.getBalance());
         console.log("seller B B: ", sellerBalanceBefore);
         console.log("Marketplace B B: ", ethers.utils.formatEther(await ethers.provider.getBalance(marketplace.address)));
-        const listItemTx = await marketplace.connect(addr2).buyMarketItem(1, options);
+        const tx = await marketplace.connect(addr2).buyMarketItem(1, options);
         console.log("Marketplace B A: ", ethers.utils.formatEther(await ethers.provider.getBalance(marketplace.address)));
         console.log("seller B A: ", ethers.utils.formatEther(await addr1.getBalance()));
         // expect(sellerBalanceBefore).to.be.greaterThan(ethers.utils.formatEther(await addr1.getBalance()));
@@ -132,7 +143,7 @@ describe("Marketplace create/cancel/accept offer", function () {
         const editCollectionTx = await marketplace.connect(addr1).updateCollectionDescription(1, "collection1desc2");
         expect(await marketplace.getCollectionsCounter()).to.equal(1); // One collection
         const collection = await marketplace.getCollection(1);
-        expect(collection.description == "collection1desc2");
+        expect(collection.description).to.equal("collection1desc2");
     });
 
     it("Should create NFT", async function () {

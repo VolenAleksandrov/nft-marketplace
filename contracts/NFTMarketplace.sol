@@ -111,11 +111,11 @@ contract NFTMarketplace is Wallet {
         require(
             percentage > 0 && percentage < 100,
             "Marketplace: Percentage fee can not be more than 99.99 or less than 0!"
-        );  
+        );
         marketplacePercentageFee = percentage;
     }
 
-    function getMarketplacePercentageFee() external view returns(uint8) {
+    function getMarketplacePercentageFee() external view returns (uint8) {
         return marketplacePercentageFee;
     }
 
@@ -336,7 +336,7 @@ contract NFTMarketplace is Wallet {
     function createNewCollection(
         string calldata name,
         string calldata description
-    ) external {
+    ) public returns (uint256) {
         require(msg.sender != address(0));
 
         _collectionIds.increment();
@@ -347,19 +347,16 @@ contract NFTMarketplace is Wallet {
             msg.sender,
             new uint256[](0)
         );
-        collection.id = _collectionIds.current();
 
-        collection.name = name;
-        collection.description = description;
-        collection.owner = msg.sender;
-
-        _idToCollection[_collectionIds.current()] = collection;
-
+        _idToCollection[collection.id] = collection;
+        
         emit CollectionCreated(
             collection.id,
             collection.name,
             collection.description
         );
+        
+        return _collectionIds.current();
     }
 
     /// @notice Upadate collection description
