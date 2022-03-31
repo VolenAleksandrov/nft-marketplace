@@ -1,11 +1,12 @@
 interface IMarketItem {
-    title: string;
-    image: string;
-    description: string;
     id: number;
-    nftContract: string;
-    tokenId: number;
-    collectionId: number;
+    name?: string;
+    image?: string;
+    description?: string;
+    nftContract?: string;
+    tokenId?: number;
+    collectionId?: number;
+    isListed?: boolean;
     listings: IListing[];
     offers: IOffer[];
 }

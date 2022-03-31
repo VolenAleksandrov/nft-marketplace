@@ -118,7 +118,7 @@ class App extends React.Component<any, any> {
     const nftContract = getContract(NFT_ADDRESS, NFT.abi, library, address);
     const marketplaceContract = getContract(MARKETPLACE_ADDRESS, MARKETPLACE.abi, library, address);
     const contractsSDK = ContractsSDK.getInstance(nftContract, marketplaceContract, library.getSigner());
-    contractsSDK.seedNFTs();
+    // contractsSDK.seedNFTs();
 
     // fetching: boolean;
     // address: string;
@@ -141,10 +141,33 @@ class App extends React.Component<any, any> {
 
   };
 
-  public onCurrentLeader = async () => {
+  public getNFTs = async () => {
     console.log("getAllNFTs");
     const { contractsSDK } = this.state;
-    contractsSDK.getAllNFTs();
+    contractsSDK.getAllMarketItems();
+  }
+  public seedNFT = async () => {
+    const { contractsSDK } = this.state;
+    contractsSDK.seedNFTs();
+  }
+  public seedApproveNFT = async () => {
+    const { contractsSDK } = this.state;
+    contractsSDK.seedApproveNFT();
+  }
+
+  public seedCollection = async () => {
+    const { contractsSDK } = this.state;
+    contractsSDK.createSeedCollection();
+  }
+
+  public seedListing = async () => {
+    const { contractsSDK } = this.state;
+    contractsSDK.createSeedListing();
+  }
+
+  public getMIs = async () => {
+    const {contractsSDK} = this.state;
+    contractsSDK.getMIs();
   }
 
   public subscribeToProviderEvents = async (provider: any) => {
@@ -237,7 +260,12 @@ class App extends React.Component<any, any> {
           />
           <div>test3</div>
           <SContent>
-            <Button onClick={this.onCurrentLeader}>Get currentLeader</Button>
+            <Button onClick={this.seedNFT}>Seed nft</Button>
+            <Button onClick={this.seedApproveNFT}>Give approve</Button>
+            <Button onClick={this.seedCollection}>Seed collection</Button>
+            <Button onClick={this.seedListing}>Seed listing</Button>
+            <Button onClick={this.getNFTs}>Get NFTs</Button>
+            <Button onClick={this.getMIs}>Get NFTs</Button>
             <div>test5</div>
             {fetching ? (
               <Column center>

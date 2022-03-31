@@ -13,13 +13,16 @@
     "ordered-imports": false,
     "jsx-no-lambda": false,
     "jsx-boolean-value": false,
-    "no-console": false
+    "no-console": false,
+    "prefer-const": false
   },
   "linterOptions": {
     "exclude": [
       "config/**/*.js",
       "node_modules/**/*.ts",
       "coverage/lcov-report/*.js",
+      "coverage/sorter.js",
+      "coverage/prettify.js",
       "*.json",
       "**/*.json"
     ]
