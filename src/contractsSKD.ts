@@ -184,7 +184,7 @@ export default class ContractsSDK {
             let asd = this.marketplace.getCollection(i);
             collectionsTxs.push(asd);
         }
-        Promise.all(collectionsTxs).then(async bCollections => {
+        await Promise.all(collectionsTxs).then(async bCollections => {
             console.log("bCollections: ", bCollections);
             for (let i = 0; i < bCollections.length; i++) {
                 const collection: ICollection = {
@@ -199,7 +199,7 @@ export default class ContractsSDK {
                     let miTx = this.marketplace.getMarketItem(marketItem);
                     marketItemsTxs.push(miTx);
                 });
-                Promise.all(marketItemsTxs).then(async bMarketItems => {
+                await Promise.all(marketItemsTxs).then(async bMarketItems => {
                     for (let i = 0; i < bMarketItems.length; i++) {
                         const marketItem: IMarketItem = {
                             id: bMarketItems[i].id,
@@ -219,7 +219,7 @@ export default class ContractsSDK {
                             let tx = this.marketplace.getListing(listing);
                             listingsTxs.push(tx);
                         });
-                        Promise.all(listingsTxs).then(async listings => {
+                        await Promise.all(listingsTxs).then(async listings => {
                             listings.forEach(element => {
                                 console.log("SELLER: ", element.seller);
                                 let listingMapped: IListing = {
@@ -239,7 +239,7 @@ export default class ContractsSDK {
                             let tx = this.marketplace.getОffers(offers);
                             offersTxs.push(tx);
                         });
-                        Promise.all(offersTxs).then(async offers => {
+                        await Promise.all(offersTxs).then(async offers => {
                             offers.forEach(element => {
                                 let offerMapped: IOffer = {
                                     id: element.id,
