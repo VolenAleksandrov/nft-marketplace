@@ -8,11 +8,17 @@ import Column from './components/Column';
 import Wrapper from './components/Wrapper';
 import Header from './components/Header';
 import Loader from './components/Loader';
-import ConnectButton from './components/ConnectButton';
+
+// import ConnectButton from './components/ConnectButton';
 
 import { Web3Provider } from '@ethersproject/providers';
 import { getChainData } from './helpers/utilities';
-// import CreateCollection from './components/CreateCollection';
+import CreateCollection from './components/CreateCollection';
+// import {
+//   Route,
+//   NavLink,
+//   HashRouter
+// } from "react-router-dom";
 import {
   NFT_ADDRESS,
   MARKETPLACE_ADDRESS
@@ -22,6 +28,14 @@ import NFT from "./constants/abis/NFT.json";
 import MARKETPLACE from "./constants/abis/NFTMarketplace.json";
 import ContractsSDK from './contractsSKD';
 import Button from './components/Button';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route
+} from "react-router-dom";
+import CreateNFT from './components/CreateNFT';
+import MarketItems from './components/MarketItems';
+import ConnectButton from './components/ConnectButton';
 // import { triggerAsyncId } from 'async_hooks';
 const SLayout = styled.div`
   position: relative;
@@ -66,8 +80,9 @@ interface IAppState {
   chainId: number;
   pendingRequest: boolean;
   result: any | null;
-  contractsSDK: any | null;
+  contractsSDK: ContractsSDK | null;
   info: any | null;
+  collections: ICollection[] | null;
 }
 
 const INITIAL_STATE: IAppState = {
@@ -79,7 +94,8 @@ const INITIAL_STATE: IAppState = {
   pendingRequest: false,
   result: null,
   contractsSDK: null,
-  info: null
+  info: null,
+  collections: null
 };
 
 class App extends React.Component<any, any> {
@@ -104,6 +120,7 @@ class App extends React.Component<any, any> {
   public componentDidMount() {
     if (this.web3Modal.cachedProvider) {
       this.onConnect();
+      this.loadCollections();
     }
   }
 
@@ -118,7 +135,7 @@ class App extends React.Component<any, any> {
     const nftContract = getContract(NFT_ADDRESS, NFT.abi, library, address);
     const marketplaceContract = getContract(MARKETPLACE_ADDRESS, MARKETPLACE.abi, library, address);
     const contractsSDK = ContractsSDK.getInstance(nftContract, marketplaceContract, library.getSigner());
-    // contractsSDK.seedNFTs();
+    const collections = await contractsSDK.getCollections();
 
     // fetching: boolean;
     // address: string;
@@ -134,8 +151,13 @@ class App extends React.Component<any, any> {
       chainId: network.chainId,
       address,
       connected: true,
-      contractsSDK
+      contractsSDK,
+      collections
     });
+
+    // await this.setState({
+    //   marketItems: contractsSDK.getAllNFTs()
+    // })
 
     await this.subscribeToProviderEvents(this.provider);
 
@@ -144,32 +166,58 @@ class App extends React.Component<any, any> {
   public getNFTs = async () => {
     console.log("getAllNFTs");
     const { contractsSDK } = this.state;
-    contractsSDK.getAllMarketItems();
+    if (contractsSDK !== null) {
+      contractsSDK.getAllMarketItems();
+    }
   }
   public seedNFT = async () => {
     const { contractsSDK } = this.state;
-    contractsSDK.seedNFTs();
+    if (contractsSDK !== null) {
+      contractsSDK.seedNFTs();
+    }
   }
   public seedApproveNFT = async () => {
     const { contractsSDK } = this.state;
-    contractsSDK.seedApproveNFT();
+    if (contractsSDK !== null) {
+      contractsSDK.seedApproveNFT();
+    }
   }
-
   public seedCollection = async () => {
     const { contractsSDK } = this.state;
-    contractsSDK.createSeedCollection();
+    if (contractsSDK !== null) {
+      contractsSDK.createSeedCollection();
+    }
   }
-
   public seedListing = async () => {
     const { contractsSDK } = this.state;
-    contractsSDK.createSeedListing();
+    if (contractsSDK !== null) {
+      contractsSDK.createSeedListing();
+    }
   }
-
   public getMIs = async () => {
-    const {contractsSDK} = this.state;
-    contractsSDK.getMIs();
+    const { contractsSDK } = this.state;
+    if (contractsSDK !== null) {
+      contractsSDK.getMIs();
+    }
   }
-
+  public loadCollections = async () => {
+    const { contractsSDK } = this.state;
+    if (contractsSDK !== null) {
+      this.setState({
+        collections: await contractsSDK.getCollections()
+      });
+    }
+  }
+  public loadBCollections = async () => {
+    const { collections } = this.state;
+    console.log("Loaded: ", collections);
+  }
+  public createCollection = async (name: string, description: string) => {
+    const { contractsSDK } = this.state;
+    if (contractsSDK !== null) {
+      contractsSDK.createCollection(name, description);
+    }
+  }
   public subscribeToProviderEvents = async (provider: any) => {
     if (!provider.on) {
       return;
@@ -181,10 +229,6 @@ class App extends React.Component<any, any> {
 
     await this.web3Modal.off('accountsChanged');
   };
-
-  // public onCreateCollection = async () => {
-  //   const { electionContract } = this.state;
-  // }
 
   public async unSubscribe(provider: any) {
     // Workaround for metamask widget > 9.0.3 (provider.off is undefined);
@@ -247,7 +291,8 @@ class App extends React.Component<any, any> {
       address,
       connected,
       chainId,
-      fetching
+      fetching,
+      collections
     } = this.state;
     return (
       <SLayout>
@@ -257,29 +302,35 @@ class App extends React.Component<any, any> {
             address={address}
             chainId={chainId}
             killSession={this.resetApp}
+            onConnect={this.onConnect}
           />
-          <div>test3</div>
           <SContent>
             <Button onClick={this.seedNFT}>Seed nft</Button>
+            <Button onClick={this.loadBCollections}>Loaded collections</Button>
             <Button onClick={this.seedApproveNFT}>Give approve</Button>
             <Button onClick={this.seedCollection}>Seed collection</Button>
             <Button onClick={this.seedListing}>Seed listing</Button>
             <Button onClick={this.getNFTs}>Get NFTs</Button>
             <Button onClick={this.getMIs}>Get NFTs</Button>
-            <div>test5</div>
+            <hr/>
+            <Router>
+              <Routes>
+                <Route path="/create-collection" element={<CreateCollection createCollection={this.createCollection} />} />
+                <Route path="/create-nft" element={<CreateNFT seedNFT={this.seedCollection} />} />
+                <Route path="/" element={<MarketItems collections={collections} />} />
+              </Routes>
+            </Router>
+            
             {fetching ? (
               <Column center>
                 <SContainer>
-                  <div>test1</div>
-                  {/* <CreateCollection /> */}
                   <Loader />
                 </SContainer>
               </Column>
             ) : (
-              <SLanding center>
-                <div>test2</div>
-                {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
-              </SLanding>
+            <SLanding center>
+              {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
+            </SLanding>
             )}
           </SContent>
         </Column>

@@ -4,6 +4,8 @@ import * as PropTypes from 'prop-types'
 import Blockie from './Blockie'
 import { ellipseAddress, getChainData } from '../helpers/utilities';
 import { transitions } from '../styles'
+import ConnectButton from './ConnectButton';
+import { Container, Nav, Navbar } from 'react-bootstrap';
 
 const SHeader = styled.div`
   margin-top: -1px;
@@ -73,22 +75,36 @@ const SDisconnect = styled.div<IHeaderStyle>`
 
 interface IHeaderProps {
   killSession: () => void
+  onConnect: () => void
   connected: boolean
   address: string
   chainId: number
 }
 
 const Header = (props: IHeaderProps) => {
-  const { connected, address, chainId, killSession } = props
-  const chainData = chainId ? getChainData(chainId) : null
+  const { connected, address, chainId, killSession, onConnect } = props;
+  const chainData = chainId ? getChainData(chainId) : null;
+  
   return (
     <SHeader {...props}>
       {connected && chainData ? (
-        <SActiveChain>
-          <p>{`Connected to`}</p>
-          <p>{chainData.name}</p>
-        </SActiveChain>
-      ) : 'Not Connected'}
+        <Navbar expand="lg">
+          <Container fluid>
+            <SActiveChain>
+              <p>{`Connected to`}</p>
+              <p>{chainData.name}</p>
+            </SActiveChain>
+            <Nav className="me-auto">
+              <Nav.Link href="/create-collection">Create collection</Nav.Link>
+              <Nav.Link href="/create-nft">Create NFT</Nav.Link>
+              <Nav.Link href="/all-market-items">MarketItems</Nav.Link>
+            </Nav>
+          </Container>
+        </Navbar>
+      ) :
+        <div>
+          {!connected && <ConnectButton onClick={onConnect} />}
+        </div>}
       {address && (
         <SActiveAccount>
           <SBlockie address={address} />

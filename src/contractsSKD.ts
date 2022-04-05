@@ -21,7 +21,7 @@ export default class ContractsSDK {
     private test: number;
     // private marketItems: MarketItem[];
     private signer: JsonRpcSigner;
-    private marketItems : IMarketItem[];
+    private marketItems: IMarketItem[];
 
     constructor(nftContract: Contract, marketplaceContract: Contract, signer: JsonRpcSigner) {
         this.nft = nftContract;
@@ -173,6 +173,92 @@ export default class ContractsSDK {
                 });
             }
         });
+    }
+
+    public async getCollections(): Promise<ICollection[]> {
+        const collectionsCount = (await this.marketplace.getCollectionsCounter()).toNumber();
+        let collections: ICollection[] = [];
+        let collectionsTxs = [];
+        console.log("Collections count: ", collectionsCount);
+        for (let i = 1; i <= collectionsCount; i++) {
+            let asd = this.marketplace.getCollection(i);
+            collectionsTxs.push(asd);
+        }
+        Promise.all(collectionsTxs).then(async bCollections => {
+            console.log("bCollections: ", bCollections);
+            for (let i = 0; i < bCollections.length; i++) {
+                const collection: ICollection = {
+                    id: bCollections[i].id,
+                    name: bCollections[i].name,
+                    description: bCollections[i].description,
+                    owner: bCollections[i].owner,
+                    marketItems: []
+                }
+                let marketItemsTxs: any[] = [];
+                bCollections[i].marketItems.forEach((marketItem: any) => {
+                    let miTx = this.marketplace.getMarketItem(marketItem);
+                    marketItemsTxs.push(miTx);
+                });
+                Promise.all(marketItemsTxs).then(async bMarketItems => {
+                    for (let i = 0; i < bMarketItems.length; i++) {
+                        const marketItem: IMarketItem = {
+                            id: bMarketItems[i].id,
+                            nftContract: this.nft.address,
+                            tokenId: bMarketItems[i].tokenId,
+                            listings: [],
+                            offers: []
+                        }
+                        let nft = await this.nft.tokenURI(bMarketItems[i].tokenId);
+                        const meta = await axios.get(nft);
+                        marketItem.image = meta.data.image;
+                        marketItem.description = meta.data.description;
+                        marketItem.name = meta.data.name;
+                        collection.marketItems.push(marketItem);
+                        let listingsTxs: any[] = [];
+                        bMarketItems[i].listings.forEach((listing: any) => {
+                            let tx = this.marketplace.getListing(listing);
+                            listingsTxs.push(tx);
+                        });
+                        Promise.all(listingsTxs).then(async listings => {
+                            listings.forEach(element => {
+                                console.log("SELLER: ", element.seller);
+                                let listingMapped: IListing = {
+                                    id: element.id,
+                                    marketItemId: marketItem.id,
+                                    seller: element.seller,
+                                    buyer: element.buyer,
+                                    price: element.price.toNumber(),
+                                    status: element.status
+                                }
+                                marketItem.listings.push(listingMapped);
+                            });
+
+                        });
+                        let offersTxs: any[] = [];
+                        bMarketItems[i].offers.forEach((offers: any) => {
+                            let tx = this.marketplace.getОffers(offers);
+                            offersTxs.push(tx);
+                        });
+                        Promise.all(offersTxs).then(async offers => {
+                            offers.forEach(element => {
+                                let offerMapped: IOffer = {
+                                    id: element.id,
+                                    marketItemId: marketItem.id,
+                                    offerer: element.offerer,
+                                    price: element.price.toNumber(),
+                                    status: element.status
+                                }
+                                marketItem.offers.push(offerMapped)
+                            });
+
+                        });
+                    }
+                });
+                collections.push(collection);
+            }
+        });
+        console.log("return collections: ", collections);
+        return collections;
     }
 
     // private async getNFTMeta(url:string) {
