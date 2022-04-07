@@ -6,7 +6,9 @@ interface IMarketItem {
     nftContract?: string;
     tokenId?: number;
     collectionId?: number;
+    collection?: ICollection;
     isListed?: boolean;
     listings: IListing[];
     offers: IOffer[];
+    owner: string;
 }

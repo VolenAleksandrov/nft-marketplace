@@ -95,7 +95,7 @@ const Header = (props: IHeaderProps) => {
               <p>{chainData.name}</p>
             </SActiveChain>
             <Nav className="me-auto">
-              <Nav.Link href="">MarketItems</Nav.Link>
+              <Nav.Link href="/">MarketItems</Nav.Link>
               <Nav.Link href="/create-collection">Create collection</Nav.Link>
               <Nav.Link href="/create-nft">Create NFT</Nav.Link>
             </Nav>

@@ -3,5 +3,4 @@ interface ICollection {
     name: string;
     description: string;
     owner: string;
-    marketItems: IMarketItem[]
 }

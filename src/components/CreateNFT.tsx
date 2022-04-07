@@ -1,143 +1,89 @@
-import React, { Component } from "react";
-// import Button from "./Button";
-// import styled from 'styled-components'
-// import Blockie from './Blockie'
-// import { ellipseAddress, getChainData } from '../helpers/utilities';
-// import { transitions } from '../styles'
+import React, { useState } from "react";
+import { create as ipfsHttpClient } from 'ipfs-http-client';
+import { Button, Form } from "react-bootstrap";
 
-// const SHeader = styled.div`
-//   margin-top: -1px;
-//   margin-bottom: 1px;
-//   width: 100%;
-//   height: 100px;
-//   display: flex;
-//   align-items: center;
-//   justify-content: space-between;
-//   padding: 0 16px;
-// `
-
-// const SActiveAccount = styled.div`
-//   display: flex;
-//   align-items: center;
-//   position: relative;
-//   font-weight: 500;
-// `
-
-// const SActiveChain = styled(SActiveAccount)`
-//   flex-direction: column;
-//   text-align: left;
-//   align-items: flex-start;
-//   & p {
-//     font-size: 0.8em;
-//     margin: 0;
-//     padding: 0;
-//   }
-//   & p:nth-child(2) {
-//     font-weight: bold;
-//   }
-// `
-
-// const SBlockie = styled(Blockie)`
-//   margin-right: 10px;
-// `
-
-// interface ICreateCollectionStyle {
-//     connected: boolean
-// }
-
-// const SAddress = styled.p<ICreateCollectionStyle>`
-//   transition: ${transitions.base};
-//   font-weight: bold;
-//   margin: ${({ connected }) => (connected ? '-2px auto 0.7em' : '0')};
-// `
-
-// const SDisconnect = styled.div<ICreateCollectionStyle>`
-//   transition: ${transitions.button};
-//   font-size: 12px;
-//   font-family: monospace;
-//   position: absolute;
-//   right: 0;
-//   top: 20px;
-//   opacity: 0.7;
-//   cursor: pointer;
-
-//   opacity: ${({ connected }) => (connected ? 1 : 0)};
-//   visibility: ${({ connected }) => (connected ? 'visible' : 'hidden')};
-//   pointer-events: ${({ connected }) => (connected ? 'auto' : 'none')};
-
-//   &:hover {
-//     transform: translateY(-1px);
-//     opacity: 0.5;
-//   }
-// `
-
+const ipfs = ipfsHttpClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' });
 interface ICreateNFT {
-    seedNFT: () => void
-//   killSession: () => void
-//   onCreateCollection: () => void
-//   connected: boolean
-//   address: string
-//   chainId: number
+    // seedNFT: () => void,
+    mint:(metadataUrl: any, price: any, collectionId: any) => void,
+    collections: ICollection[] | null;
+    address: any;
 }
-
-/**
- * onCreateCollection
- */
-// function onCreateCollection() {
-// }
-
-class CreateNFT extends Component<ICreateNFT> {
-    constructor(props: ICreateNFT) {
-        super(props);
+const CreateNFT = (props: ICreateNFT) => {
+    const { collections, address } = props;
+    const [file, setFile] = useState(null);
+    const [formInput, updateFormInput] = useState({ price: '', name: '', description: '', collectionId: '' })
+    const [uplodMetadataStatus, updateUploadMetadataStatus] = useState('');
+    let userCollections: ICollection[] = [];
+    if (collections) {
+        userCollections = collections.filter(x => x.owner !== address);
     }
-    public render = () => {
-        // const { seedNFT } = this.props;
-        // const [name, setName] = useState('')
-        // const [description, setDescription] = useState('')
-
-        // const onSubmit = (e: { preventDefault: () => void }) => {
-        //     e.preventDefault();
-        //     if (!name) {
-        //         alert('Please add a collection name!');
-        //         return;
-        //     }
-        //     if (!description) {
-        //         alert('Please add a collection description!');
-        //         return;
-        //     }
-
-        //     // onCreateCollection({ name, description })
-
-        //     setName('')
-        //     setDescription('')
-        // }
-
-        return (
-            <div>TEST TEST</div>
-            // <Button onClick={seedNFT}>Seed NFT</Button>
-            // <form className='create-collection-form' onSubmit={onSubmit}>
-            //     <div className='form-control'>
-            //         <label>Create collection</label>
-            //         <input
-            //             type='text'
-            //             placeholder='Name'
-            //             value={name}
-            //             onChange={(e) => setName(e.target.value)}
-            //         />
-            //     </div>
-            //     <div className='form-control'>
-            //         <label>Description</label>
-            //         <input
-            //             type='text'
-            //             placeholder='Description'
-            //             value={description}
-            //             onChange={(e) => setDescription(e.target.value)}
-            //         />
-            //     </div>
-            //     <input type='submit' value='Create' className='btn btn-block' />
-            // </form>
-        )
+    function onChangeFile(e: any) {
+        const file = e.target.files[0];
+        setFile(file);
     }
+    async function createMarketItem(e: any) {
+        e.preventDefault();
+        const { name, description, price } = formInput;
+        let fileUrl = '';
+        try {
+            const added = await ipfs.add(file);
+            console.log("added: ", added);
+            fileUrl = `https://ipfs.infura.io/ipfs/${added.path}`;
+            console.log("URL: ", fileUrl);
+        } catch (error) {
+            console.log('Error uploading file: ', error);
+        }
+
+        if (file !== null) {
+            const metadataFile = {
+                name,
+                description,
+                image: fileUrl
+            }
+            console.log("Metadata stringify: ", metadataFile);
+            const metadata = await ipfs.add(JSON.stringify(metadataFile));
+            updateUploadMetadataStatus(`Upload complete! Minting token with metadata URI: ${metadata.url}`);
+            console.log(`https://ipfs.infura.io/ipfs/${metadata.path}`);
+            console.log(uplodMetadataStatus);
+        }
+        console.log(price);
+
+    }
+    return (
+        <Form onSubmit={createMarketItem} className="mb-12">
+            <Form.Group className="mb-12">
+                <label>Name</label>
+                <Form.Control type="text" placeholder="NFT Name" onChange={e => updateFormInput({ ...formInput, name: e.target.value })} />
+            </Form.Group>
+            <Form.Group className="mb-12">
+                <label>Description</label>
+                <Form.Control type="text" placeholder="NFT Description" onChange={e => updateFormInput({ ...formInput, description: e.target.value })} />
+            </Form.Group>
+            <Form.Group className="mb-12">
+                <label>NFT Price in Eth</label>
+                <Form.Control type="text" placeholder="NFT Price in Eth" onChange={e => updateFormInput({ ...formInput, price: e.target.value })} />
+            </Form.Group>
+            {userCollections.length > 0 ? (
+                <Form.Group className="mb-12">
+                    <label>NFT Price in Eth</label>
+                    <Form.Control as="select" aria-label="Collection select" onChange={e => updateFormInput({ ...formInput, collectionId: e.target.value })}>
+                        <option>Select collection</option>
+                        {userCollections.map((collection: ICollection) => (
+                            <option value={collection.id}>{collection.name}</option>
+                        ))}
+                    </Form.Control>
+                </Form.Group>
+            ) : <div>You have no collections</div>}
+            <Form.Group className="mb-3">
+                <label>NFT picture</label>
+                <Form.Control type="file" name="NFT" className="my-4" onChange={onChangeFile} />
+            </Form.Group>
+            <Button variant="primary" type="submit" onClick={createMarketItem}>
+                Create and List NFT
+            </Button>
+        </Form>
+    );
 }
 
 export default CreateNFT

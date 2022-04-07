@@ -1,41 +1,80 @@
-import { JsonRpcSigner } from "@ethersproject/providers";
-import { Contract, ethers } from "ethers";
+import { JsonRpcSigner, Web3Provider } from "@ethersproject/providers";
+import { BigNumber, Contract, ethers } from "ethers";
+import {
+    NFT_ADDRESS,
+    MARKETPLACE_ADDRESS
+  } from './constants';
+  import { getContract } from './helpers/ethers';
+  import NFT from "./constants/abis/NFT.json";
+  import MARKETPLACE from "./constants/abis/NFTMarketplace.json";
 import axios from 'axios';
-// import { environment } from "./environments/environment";
-// import NFT from "./constants/abis/NFT.json";
-// import MARKETPLACE from "./constants/abis/NFTMarketplace.json";
 
 export default class ContractsSDK {
-
-    public static getInstance(nftContract: Contract, marketplaceContract: Contract, signer: JsonRpcSigner) {
+    public static getInstance(provider: any) {
         if (ContractsSDK.instance == null) {
-            ContractsSDK.instance = new ContractsSDK(nftContract, marketplaceContract, signer);
+            ContractsSDK.instance = new ContractsSDK(provider);
         }
 
         return this.instance;
     }
-
     private static instance: any = null;
+    private provider: any;
+    private library: Web3Provider;
     private nft: Contract;
     private marketplace: Contract;
-    private test: number;
-    // private marketItems: MarketItem[];
     private signer: JsonRpcSigner;
     private marketItems: IMarketItem[];
-
-    constructor(nftContract: Contract, marketplaceContract: Contract, signer: JsonRpcSigner) {
-        this.nft = nftContract;
-        this.marketplace = marketplaceContract;
-        this.signer = signer;
+    private address: any;
+    
+    constructor(provider: any) {
+        this.provider = provider;
+        console.log("constructor:Provider: ", provider);
+        this.library = new Web3Provider(this.provider);
+        this.signer = this.library.getSigner();
+        this.address = this.provider.selectedAddress ? this.provider.selectedAddress : this.provider.accounts[0];
+        console.log("SDK Initialized: ", this.library, this.signer);
     }
 
-    public async createNFT(url: string) {
+    public async initializeContracts(address: any) {
+        console.log("initializeContracts: ", this.provider, this.library, this.signer);
+        this.nft = getContract(NFT_ADDRESS, NFT.abi, this.library, address);
+        this.marketplace = getContract(MARKETPLACE_ADDRESS, MARKETPLACE.abi, this.library, address);
+        console.log("Contracts initialized: ", this.nft, this.marketplace);
+    }
+
+    public initializeLibrary(){
+        this.library = new Web3Provider(this.provider);
+    }
+
+    public async getNetwork(){
+        return await this.library.getNetwork();
+    }
+
+    public getProvider() {
+        return this.provider;
+    }
+
+    public getLibrary(){
+        return this.library;
+    }
+
+    public getAddress(){
+        return this.address;
+    }
+
+    public async createNFT(url: string): Promise<number> {
         const tx = this.nft.createToken(url);
         return (await this.signer.sendTransaction(tx)).value.toNumber();
     }
 
     public async getMIs() {
         console.log("MIs: ", this.marketItems);
+    }
+
+    public async mintAndListItem(metadataUrl: any, price: any, collectionId: any) {
+        const tokenId = await this.createNFT(metadataUrl);
+        await this.giveApprovalToMarketplace(tokenId);
+        await this.createListing(collectionId, tokenId, this.nft.address, BigNumber.from(price));
     }
 
     public async seedApproveNFT() {
@@ -65,7 +104,8 @@ export default class ContractsSDK {
     }
 
     public async createSeedListing() {
-        const listingId = this.createListing(1, 1, this.nft.address, 1).then(() => {
+        const price = BigNumber.from("0.1");
+        const listingId = this.createListing(1, 1, this.nft.address, price).then(() => {
             console.log("listingId: ", listingId);
         });
         // const nftId1 = this.createNFT("Sample 1 URL!");
@@ -75,7 +115,6 @@ export default class ContractsSDK {
     }
 
     public async getAllNFTs() {
-        console.log("N: ", this.test);
         console.log("getAllNFTs");
         const nftsCount = (await this.nft.getTokensCounter()).toNumber();
         console.log("nftsCount: ", nftsCount);
@@ -98,7 +137,8 @@ export default class ContractsSDK {
                     nftContract: this.nft.address,
                     tokenId: i + 1,
                     offers: [],
-                    listings: []
+                    listings: [],
+                    owner: "asd"
                 }
                 console.log(marketItem);
             }
@@ -114,18 +154,18 @@ export default class ContractsSDK {
             let asd = this.marketplace.getMarketItem(i);
             marketItemsTxs.push(asd);
         }
-        Promise.all(marketItemsTxs).then(async bMarketItems => {
+        await Promise.all(marketItemsTxs).then(async bMarketItems => {
             for (let i = 0; i < bMarketItems.length; i++) {
+                let nftOwner = await this.nft.ownerOf(bMarketItems[i].id);
                 const marketItem: IMarketItem = {
                     id: bMarketItems[i].id,
-                    // name: meta.data.name,
-                    // image: meta.data.image,
-                    // description: meta.data.description,
+                    owner: nftOwner,
                     nftContract: this.nft.address,
                     tokenId: bMarketItems[i].tokenId,
                     listings: [],
                     offers: []
                 }
+
                 let nft = await this.nft.tokenURI(bMarketItems[i].tokenId);
                 const meta = await axios.get(nft);
                 marketItem.image = meta.data.image;
@@ -138,7 +178,7 @@ export default class ContractsSDK {
                     let tx = this.marketplace.getListing(listing);
                     listingsTxs.push(tx);
                 });
-                Promise.all(listingsTxs).then(async listings => {
+                await Promise.all(listingsTxs).then(async listings => {
                     listings.forEach(element => {
                         console.log("SELLER: ", element.seller);
                         let listingMapped: IListing = {
@@ -150,15 +190,16 @@ export default class ContractsSDK {
                             status: element.status
                         }
                         marketItem.listings.push(listingMapped);
+
                     });
 
                 });
                 let offersTxs: any[] = [];
                 bMarketItems[i].offers.forEach((offers: any) => {
-                    let tx = this.marketplace.getОffers(offers);
+                    let tx = this.marketplace.getOffers(offers);
                     offersTxs.push(tx);
                 });
-                Promise.all(offersTxs).then(async offers => {
+                await Promise.all(offersTxs).then(async offers => {
                     offers.forEach(element => {
                         let offerMapped: IOffer = {
                             id: element.id,
@@ -169,13 +210,14 @@ export default class ContractsSDK {
                         }
                         marketItem.offers.push(offerMapped)
                     });
-
                 });
+
+                marketItem.isListed = await this.isListedMarketItem(marketItem.tokenId, nftOwner, marketItem.listings);
             }
         });
+        return marketItems;
     }
-
-    public async getCollections(): Promise<ICollection[]> {
+    public async getAllCollections(): Promise<ICollection[]> {
         const collectionsCount = (await this.marketplace.getCollectionsCounter()).toNumber();
         let collections: ICollection[] = [];
         let collectionsTxs = [];
@@ -191,82 +233,18 @@ export default class ContractsSDK {
                     id: bCollections[i].id,
                     name: bCollections[i].name,
                     description: bCollections[i].description,
-                    owner: bCollections[i].owner,
-                    marketItems: []
+                    owner: bCollections[i].owner
                 }
-                let marketItemsTxs: any[] = [];
-                bCollections[i].marketItems.forEach((marketItem: any) => {
-                    let miTx = this.marketplace.getMarketItem(marketItem);
-                    marketItemsTxs.push(miTx);
-                });
-                await Promise.all(marketItemsTxs).then(async bMarketItems => {
-                    for (let i = 0; i < bMarketItems.length; i++) {
-                        const marketItem: IMarketItem = {
-                            id: bMarketItems[i].id,
-                            nftContract: this.nft.address,
-                            tokenId: bMarketItems[i].tokenId,
-                            listings: [],
-                            offers: []
-                        }
-                        let nft = await this.nft.tokenURI(bMarketItems[i].tokenId);
-                        const meta = await axios.get(nft);
-                        marketItem.image = meta.data.image;
-                        marketItem.description = meta.data.description;
-                        marketItem.name = meta.data.name;
-                        collection.marketItems.push(marketItem);
-                        let listingsTxs: any[] = [];
-                        bMarketItems[i].listings.forEach((listing: any) => {
-                            let tx = this.marketplace.getListing(listing);
-                            listingsTxs.push(tx);
-                        });
-                        await Promise.all(listingsTxs).then(async listings => {
-                            listings.forEach(element => {
-                                console.log("SELLER: ", element.seller);
-                                let listingMapped: IListing = {
-                                    id: element.id,
-                                    marketItemId: marketItem.id,
-                                    seller: element.seller,
-                                    buyer: element.buyer,
-                                    price: element.price.toNumber(),
-                                    status: element.status
-                                }
-                                marketItem.listings.push(listingMapped);
-                            });
-
-                        });
-                        let offersTxs: any[] = [];
-                        bMarketItems[i].offers.forEach((offers: any) => {
-                            let tx = this.marketplace.getОffers(offers);
-                            offersTxs.push(tx);
-                        });
-                        await Promise.all(offersTxs).then(async offers => {
-                            offers.forEach(element => {
-                                let offerMapped: IOffer = {
-                                    id: element.id,
-                                    marketItemId: marketItem.id,
-                                    offerer: element.offerer,
-                                    price: element.price.toNumber(),
-                                    status: element.status
-                                }
-                                marketItem.offers.push(offerMapped)
-                            });
-
-                        });
-                    }
-                });
                 collections.push(collection);
             }
         });
-        console.log("return collections: ", collections);
         return collections;
     }
 
-    // private async getNFTMeta(url:string) {
-
-    // }
-
     public async createCollection(name: string, description: string): Promise<any> {
         const tx = this.marketplace.createNewCollection(name, description);
+        console.log("createCollection:tx: ", tx);
+        console.log(this.signer);
         return this.signer.sendTransaction(tx);
     }
 
@@ -280,7 +258,7 @@ export default class ContractsSDK {
         return this.signer.sendTransaction(tx);
     }
 
-    public async createListing(collectionId: number, tokenId: number, nftContract: string, price: number): Promise<any> {
+    public async createListing(collectionId: number, tokenId: number, nftContract: string, price: BigNumber): Promise<any> {
         const tx = this.marketplace.createListing(collectionId, tokenId, nftContract, price);
         return this.signer.sendTransaction(tx);
     }
@@ -336,4 +314,12 @@ export default class ContractsSDK {
     //         bySigner ? signer : provider,
     //     )
     // }
+    private async isListedMarketItem(tokenId: any, nftOwner: any, listings: IListing[]): Promise<boolean> {
+        console.log("isListedMarketItem:listings[0]: ", listings[0].seller);
+        console.log("isListedMarketItem:nftOwner: ", nftOwner);
+        const nftApproved = await this.nft.getApproved(tokenId);
+        console.log("isListedMarketItem:nftApproved: ", nftApproved);
+        console.log("isListedMarketItem:this.marketplace.address: ", this.marketplace.address);
+        return listings.findIndex(x => x.seller === nftOwner) > -1 && nftApproved === this.marketplace.address;
+    }
 }
