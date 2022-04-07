@@ -9,34 +9,20 @@ import Wrapper from './components/Wrapper';
 import Header from './components/Header';
 import Loader from './components/Loader';
 
-// import ConnectButton from './components/ConnectButton';
-
-import { Web3Provider } from '@ethersproject/providers';
+// import { Web3Provider } from '@ethersproject/providers';
 import { getChainData } from './helpers/utilities';
 import CreateCollection from './components/CreateCollection';
-// import {
-//   Route,
-//   NavLink,
-//   HashRouter
-// } from "react-router-dom";
-import {
-  NFT_ADDRESS,
-  MARKETPLACE_ADDRESS
-} from './constants';
-import { getContract } from './helpers/ethers';
-import NFT from "./constants/abis/NFT.json";
-import MARKETPLACE from "./constants/abis/NFTMarketplace.json";
+
 import ContractsSDK from './contractsSKD';
-import Button from './components/Button';
+// import Button from './components/Button';
 import {
   BrowserRouter as Router,
   Routes,
   Route
 } from "react-router-dom";
-import CreateNFT from './components/CreateNFT';
 import MarketItems from './components/MarketItems';
 import ConnectButton from './components/ConnectButton';
-// import { triggerAsyncId } from 'async_hooks';
+import CreateNFT from './components/CreateNFT';
 const SLayout = styled.div`
   position: relative;
   width: 100%;
@@ -83,6 +69,7 @@ interface IAppState {
   contractsSDK: ContractsSDK | null;
   info: any | null;
   collections: ICollection[] | null;
+  marketItems: IMarketItem[] | null;
 }
 
 const INITIAL_STATE: IAppState = {
@@ -95,14 +82,16 @@ const INITIAL_STATE: IAppState = {
   result: null,
   contractsSDK: null,
   info: null,
-  collections: null
+  collections: null,
+  marketItems: null
 };
 
 class App extends React.Component<any, any> {
   // @ts-ignore
   public web3Modal: Web3Modal;
   public state: IAppState;
-  public provider: any;
+  private contractsSDK: any;
+  // public provider: any;
 
   constructor(props: any) {
     super(props);
@@ -120,22 +109,22 @@ class App extends React.Component<any, any> {
   public componentDidMount() {
     if (this.web3Modal.cachedProvider) {
       this.onConnect();
-      this.loadCollections();
     }
   }
 
   public onConnect = async () => {
-    this.provider = await this.web3Modal.connect();
+    const provider = await this.web3Modal.connect();
+    console.log("onConnect:Provider: ", provider);
+    this.contractsSDK = ContractsSDK.getInstance(provider);
 
-    const library = new Web3Provider(this.provider);
+    const network = await this.contractsSDK.getNetwork();
+    const library = this.contractsSDK.getLibrary();
+    const address = this.contractsSDK.getAddress();
 
-    const network = await library.getNetwork();
+    await this.contractsSDK.initializeContracts();
 
-    const address = this.provider.selectedAddress ? this.provider.selectedAddress : this.provider.accounts[0];
-    const nftContract = getContract(NFT_ADDRESS, NFT.abi, library, address);
-    const marketplaceContract = getContract(MARKETPLACE_ADDRESS, MARKETPLACE.abi, library, address);
-    const contractsSDK = ContractsSDK.getInstance(nftContract, marketplaceContract, library.getSigner());
-    const collections = await contractsSDK.getCollections();
+    const marketItems = await this.contractsSDK.getAllMarketItems();
+    const collections = await this.contractsSDK.getAllCollections();
 
     // fetching: boolean;
     // address: string;
@@ -151,15 +140,16 @@ class App extends React.Component<any, any> {
       chainId: network.chainId,
       address,
       connected: true,
-      contractsSDK,
-      collections
+      contractsSDK: this.contractsSDK,
+      collections,
+      marketItems
     });
 
     // await this.setState({
     //   marketItems: contractsSDK.getAllNFTs()
     // })
 
-    await this.subscribeToProviderEvents(this.provider);
+    await this.subscribeToProviderEvents(provider);
 
   };
 
@@ -198,14 +188,6 @@ class App extends React.Component<any, any> {
     const { contractsSDK } = this.state;
     if (contractsSDK !== null) {
       contractsSDK.getMIs();
-    }
-  }
-  public loadCollections = async () => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      this.setState({
-        collections: await contractsSDK.getCollections()
-      });
     }
   }
   public loadBCollections = async () => {
@@ -252,8 +234,8 @@ class App extends React.Component<any, any> {
   }
 
   public networkChanged = async (networkId: number) => {
-    const library = new Web3Provider(this.provider);
-    const network = await library.getNetwork();
+    const library = this.contractsSDK.initializeLibrary();
+    const network = this.contractsSDK.getNetwork();
     const chainId = network.chainId;
     await this.setState({ chainId, library });
   }
@@ -280,7 +262,7 @@ class App extends React.Component<any, any> {
     await this.web3Modal.clearCachedProvider();
     localStorage.removeItem("WEB3_CONNECT_CACHED_PROVIDER");
     localStorage.removeItem("walletconnect");
-    await this.unSubscribe(this.provider);
+    await this.unSubscribe(this.contractsSDK.getProvider());
 
     this.setState({ ...INITIAL_STATE });
 
@@ -292,7 +274,9 @@ class App extends React.Component<any, any> {
       connected,
       chainId,
       fetching,
-      collections
+      collections,
+      marketItems,
+      contractsSDK
     } = this.state;
     return (
       <SLayout>
@@ -304,7 +288,7 @@ class App extends React.Component<any, any> {
             killSession={this.resetApp}
             onConnect={this.onConnect}
           />
-          <SContent>
+          {/* <SContent>
             <Button onClick={this.seedNFT}>Seed nft</Button>
             <Button onClick={this.loadBCollections}>Loaded collections</Button>
             <Button onClick={this.seedApproveNFT}>Give approve</Button>
@@ -312,15 +296,21 @@ class App extends React.Component<any, any> {
             <Button onClick={this.seedListing}>Seed listing</Button>
             <Button onClick={this.getNFTs}>Get NFTs</Button>
             <Button onClick={this.getMIs}>Get NFTs</Button>
-            <hr/>
-            <Router>
-              <Routes>
-                <Route path="/create-collection" element={<CreateCollection createCollection={this.createCollection} />} />
-                <Route path="/create-nft" element={<CreateNFT seedNFT={this.seedCollection} />} />
-                <Route path="/" element={<MarketItems collections={collections} />} />
-              </Routes>
-            </Router>
-            
+          </SContent> */}
+          <SContent>
+            {contractsSDK && !fetching ? (
+              <Router >
+                <Routes>
+                  <Route path="/create-collection" element={<CreateCollection createCollection={this.createCollection} />} />
+                  <Route path="/create-nft" element={<CreateNFT mint={contractsSDK.mintAndListItem} collections={collections} address={address} />} />
+                  <Route path="/" element={<MarketItems collections={collections} marketItems={marketItems} />} />
+                </Routes>
+              </Router>
+            ) : (
+              <SLanding center>
+                {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
+              </SLanding>
+            )}
             {fetching ? (
               <Column center>
                 <SContainer>
@@ -328,9 +318,9 @@ class App extends React.Component<any, any> {
                 </SContainer>
               </Column>
             ) : (
-            <SLanding center>
-              {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
-            </SLanding>
+              <SLanding center>
+                {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
+              </SLanding>
             )}
           </SContent>
         </Column>
