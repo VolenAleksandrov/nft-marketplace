@@ -45,6 +45,21 @@ export function ellipseAddress(
   return `${address.slice(0, width)}...${address.slice(-width)}`;
 }
 
+export function getStatusName(
+  listingStatus: number
+): string {
+  switch (listingStatus) {
+    case 0:
+      return "Active";
+      case 1:
+        return "Sold";
+        case 2:
+      return "Canceled";
+    default:
+      return "Invalid status";
+  }
+}
+
 export function padLeft(n: string, width: number, z?: string): string {
   z = z || "0";
   n = n + "";

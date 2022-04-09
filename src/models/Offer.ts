@@ -2,6 +2,6 @@ interface IOffer {
     id: number;
     offerer: string;
     marketItemId: number;
-    price: number;
+    price: string;
     status: number;
 }

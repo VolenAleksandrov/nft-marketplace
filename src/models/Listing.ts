@@ -1,8 +1,8 @@
 interface IListing {
     id: number;
-    marketItemId: number;
-    seller?: string;
+    marketItemId: number | null;
+    seller: string;
     buyer?: string;
-    price?: number;
-    status?: number;
+    price: string;
+    status: number;
 }

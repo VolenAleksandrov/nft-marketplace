@@ -191,6 +191,14 @@ contract NFTMarketplace is Wallet {
         return _idToMarketItem[marketItemId];
     }
 
+    function getMarketItemByAddressAndTokenId(address nftContratAddress, uint256 tokenId)
+        public
+        view
+        returns (uint256)
+    {
+        return _nftContractToItemIdToMarketItem[nftContratAddress][tokenId];
+    }
+
     function getListing(uint256 listingId)
         public
         view
@@ -349,13 +357,13 @@ contract NFTMarketplace is Wallet {
         );
 
         _idToCollection[collection.id] = collection;
-        
+
         emit CollectionCreated(
             collection.id,
             collection.name,
             collection.description
         );
-        
+
         return _collectionIds.current();
     }
 
@@ -428,6 +436,7 @@ contract NFTMarketplace is Wallet {
             new uint256[](0)
         );
         marketItemToCollection[_marketItemIds.current()] = collectionId;
+        _nftContractToItemIdToMarketItem[nftContract][tokenId] = _marketItemIds.current();
         _idToCollection[collectionId].marketItems.push(
             _marketItemIds.current()
         );

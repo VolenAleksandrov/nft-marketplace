@@ -1,40 +1,40 @@
 import React from "react";
-import { Button, Card, Stack } from "react-bootstrap";
+import { Card, Container } from "react-bootstrap";
+import { Link } from "react-router-dom";
 
 interface IMarketItemsPage {
     collections: ICollection[] | null;
     marketItems: IMarketItem[] | null;
-    // seedCollection: () => void
-    // createCollection: (name: string, description: string) => void
-    //   killSession: () => void
-    //   onCreateCollection: () => void
-    //   connected: boolean
-    //   address: string
-    //   chainId: number
 }
 const MarketItems = (props: IMarketItemsPage) => {
     const { collections, marketItems } = props;
     console.log("MarketItemsPage:collections: ", collections);
     console.log("MarketItemsPage:marketItems: ", marketItems);
+
     return (
-        <div style={{ width: '100%' }}>
+        <Container className="row">
             {marketItems && marketItems.length > 0 ? (
-                <Stack gap={1} direction="vertical" style={{ width: '100%', display: 'flex', justifyContent: 'flex-start' }}>
-                    {marketItems.map((item: IMarketItem) => (
-                        <Card style={{ width: '18rem' }}>
+                <Container className="row">
+                    {marketItems.map((item: IMarketItem, index: number) => (
+                        <Card className="col-md-3">
                             <Card.Img variant="top" src={item.image} />
                             <Card.Body>
                                 <Card.Title>{item.name}</Card.Title>
                                 <Card.Text>{item.description}</Card.Text>
-                                <Card.Text>Price: {item.listings[0].price} ETH</Card.Text>
-                                <Button variant="primary">Go somewhere</Button>
+                                {item.listings && item.currentListingIndex >= 0 ? (
+                                    <Card.Text>Price: {item.listings[item.currentListingIndex].price} ETH</Card.Text>
+                                ) : (
+                                    <Card.Text>Not for sale!</Card.Text>
+                                )}
+                                {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
+                                <Link to={"/marketItems/" + index}>Show</Link>
                             </Card.Body>
                         </Card>
                     ))}
-                </Stack>
-            ) : <div>No elements</div> }
+                </Container>
+            ) : <div>No elements</div>}
 
-        </div>
+        </Container>
     )
 }
 

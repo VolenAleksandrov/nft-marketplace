@@ -14,7 +14,8 @@
     "jsx-no-lambda": false,
     "jsx-boolean-value": false,
     "no-console": false,
-    "prefer-const": false
+    "prefer-const": false,
+    "triple-equals": false
   },
   "linterOptions": {
     "exclude": [
