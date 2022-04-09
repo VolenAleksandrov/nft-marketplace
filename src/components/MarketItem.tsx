@@ -7,7 +7,7 @@ interface IMarketItemPage {
     // collections: ICollection[] | null;
     marketItems: IMarketItem[] | null;
     userAddress: string;
-    buyNFT: (listingId: number) => void;
+    buyNFT: (listingId: number, price: number) => void;
     cancelListing: (listingId: number) => void;
     createOffer: (marketItemId: number, price: number) => void;
     acceptOffer: (offerId: number) => void;
@@ -23,12 +23,14 @@ interface IMarketItemPage {
 const MarketItem = (props: IMarketItemPage) => {
     const { marketItems, userAddress, buyNFT, cancelListing, acceptOffer, cancelOffer, createOffer } = props;
     const [show, setShow] = useState(false);
-    const { itemInd } = useParams();
+    const { tokenId } = useParams();
     const [formInput, updateFormInput] = useState({ price: ''})
     let marketItem: IMarketItem | undefined;
-    console.log(marketItems, itemInd);
-    if (marketItems && itemInd) {
-        marketItem = marketItems[itemInd];
+    console.log(marketItems, tokenId);
+    console.log("ToKEN: ", parseInt(tokenId, 10));
+    if (marketItems && tokenId) {
+        console.log("ToKEN: ", parseInt(tokenId, 10));
+        marketItem = marketItems.find(x => x.tokenId === parseInt(tokenId, 10));
     }
 
     const handleClose = () => setShow(false);
@@ -42,7 +44,7 @@ const MarketItem = (props: IMarketItemPage) => {
         }
         if(marketItem)
         {
-            createOffer(marketItem.id, parseFloat(price));
+            createOffer(marketItem.tokenId, parseFloat(price));
         }
     }
 
@@ -129,7 +131,7 @@ const MarketItem = (props: IMarketItemPage) => {
                                                     <td>
                                                         <>
                                                             {(listing.status === 0 && listing.seller !== userAddress) ? (
-                                                                <Button className="btn" onClick={buyNFT.bind(null, listing.id)}>Buy</Button>
+                                                                <Button className="btn" onClick={buyNFT.bind(null, listing.id, listing.price)}>Buy</Button>
                                                             ) : null}
                                                             {listing.status === 0 && listing.seller === userAddress ? (
                                                                 <Button className="btn" onClick={cancelListing.bind(null, listing.id)}>Cancel</Button>
@@ -167,7 +169,7 @@ const MarketItem = (props: IMarketItemPage) => {
                                                             {(offer.status === 0 && offer.offerer !== userAddress && marketItem && marketItem.owner == userAddress) ? (
                                                                 <Button className="btn" onClick={acceptOffer.bind(null, offer.id)}>Accept</Button>
                                                             ) : null}
-                                                            {offer.offerer === userAddress ? (
+                                                            {offer.status === 0 && offer.offerer === userAddress ? (
                                                                 <Button className="btn" onClick={cancelOffer.bind(null, offer.id)}>Cancel</Button>
                                                             ) : null}
                                                         </>

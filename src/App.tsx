@@ -24,7 +24,7 @@ import {
 import MarketItems from './components/MarketItems';
 import ConnectButton from './components/ConnectButton';
 import CreateNFT from './components/CreateNFT';
-import { Button, Container } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
 import MarketItem from './components/MarketItem';
 import Profile from './components/Profile';
 // const SLayout = styled.div`
@@ -158,10 +158,10 @@ class App extends React.Component<any, any> {
     await this.subscribeToProviderEvents(provider);
 
   };
-  public buyNFT = async (listingId: number) => {
+  public buyNFT = async (listingId: number, price: number) => {
     const { contractsSDK } = this.state;
     if (contractsSDK !== null) {
-      await contractsSDK.buyMarketItem(listingId);
+      await contractsSDK.buyMarketItem(listingId, price);
     }
   }
   public getNFTs = async () => {
@@ -214,10 +214,10 @@ class App extends React.Component<any, any> {
     }
   }
 
-  public createOffer = async (marketItemId: number, price: number) => {
+  public createOffer = async (tokenId: number, price: number) => {
     const { contractsSDK } = this.state;
     if (contractsSDK !== null) {
-      await contractsSDK.createOffer(marketItemId, price);
+      await contractsSDK.createOffer(tokenId, price);
     }
   }
 
@@ -331,14 +331,6 @@ class App extends React.Component<any, any> {
     } = this.state;
     return (
       <Container className="p-3">
-        <Container>
-          <Button onClick={this.seedNFT}>Seed nft</Button>
-          <Button onClick={this.loadBCollections}>Loaded collections</Button>
-          <Button onClick={this.seedApproveNFT}>Give approve</Button>
-          <Button onClick={this.seedCollection}>Seed collection</Button>
-          <Button onClick={this.seedListing}>Seed listing</Button>
-          <Button onClick={this.getNFTs}>Get NFTs</Button>
-        </Container>
         <Container className="md-12">
           {contractsSDK && !fetching ? (
             <Router>
@@ -353,7 +345,7 @@ class App extends React.Component<any, any> {
                 <Route path='/profile' element={<Profile collections={collections} marketItems={marketItems} userAddress={address} approve={this.approveNFT} createListing={this.createListing} /> } />
                 <Route path="/create-nft" element={<CreateNFT mint={this.createNFT} collections={collections} address={address} />} />
                 <Route path="/marketItems" element={<MarketItems collections={collections} marketItems={marketItems} />} />
-                <Route path="/marketItems/:itemInd" element={<MarketItem buyNFT={this.buyNFT} cancelListing={this.cancelListing} createOffer={this.createOffer} acceptOffer={this.acceptOffer} cancelOffer={this.cancelOffer} marketItems={marketItems} userAddress={address}/>} />
+                <Route path="/marketItems/:tokenId" element={<MarketItem buyNFT={this.buyNFT} cancelListing={this.cancelListing} createOffer={this.createOffer} acceptOffer={this.acceptOffer} cancelOffer={this.cancelOffer} marketItems={marketItems} userAddress={address}/>} />
               </Routes>
             </Router>
           ) : (

@@ -73,7 +73,7 @@ const Profile = (props: IProfilePage) => {
                                         </>)}
                                     {!item.isApproved ? <Button onClick={approveNFT.bind(null, item.tokenId)}>Approve</Button> : null}
                                     {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
-                                    <Link to={"/marketItems/" + index}>Show</Link>
+                                    <Link to={"/marketItems/" + item.tokenId}>Show</Link>
                                 </Card.Body>
                             </Card>
                         ))}

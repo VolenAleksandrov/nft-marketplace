@@ -26,8 +26,7 @@ const MarketItems = (props: IMarketItemsPage) => {
                                 ) : (
                                     <Card.Text>Not for sale!</Card.Text>
                                 )}
-                                {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
-                                <Link to={"/marketItems/" + index}>Show</Link>
+                                <Link to={"/marketItems/" + item.tokenId}>Show</Link>
                             </Card.Body>
                         </Card>
                     ))}

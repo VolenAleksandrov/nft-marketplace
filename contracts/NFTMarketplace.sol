@@ -249,12 +249,19 @@ contract NFTMarketplace is Wallet {
         );
     }
 
-    function createOffer(uint256 marketItemId)
+    function createOffer(uint256 tokenId, address nftContract)
         public
         payable
         returns (uint256)
     {
-        MarketItem storage marketItem = _idToMarketItem[marketItemId];
+        MarketItem storage marketItem = _idToMarketItem[_nftContractToItemIdToMarketItem[nftContract][tokenId]];
+        if (marketItem.id == 0) {
+            marketItem = _createMarketItem(
+                nftContract,
+                tokenId,
+                0
+            );
+        }
         require(
             ERC721(marketItem.nftContract).getApproved(marketItem.tokenId) ==
                 address(this),

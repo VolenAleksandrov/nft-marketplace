@@ -124,16 +124,15 @@ export default class ContractsSDK {
         await tx.wait();
     }
 
-    public async buyMarketItem(listingId: number): Promise<any> {
-        const listingPrice = "0.1";
-        const options = { value: ethers.utils.parseEther(listingPrice) };
-        const tx = this.marketplace.createOffer(listingId, options);
+    public async buyMarketItem(listingId: number, price: number): Promise<any> {
+        const options = { value: ethers.utils.parseEther(price.toString()) };
+        const tx = this.marketplace.buyMarketItem(listingId, options);
         return this.signer.sendTransaction(tx);
     }
 
-    public async createOffer(marketItemId: number, price: number): Promise<any> {
+    public async createOffer(tokenId: number, price: number): Promise<any> {
         const options = { value: ethers.utils.parseEther(price.toString()) };
-        const tx = this.marketplace.createOffer(marketItemId, options);
+        const tx = this.marketplace.createOffer(tokenId, ethers.utils.getAddress(this.nft.address), options);
         return this.signer.sendTransaction(tx);
     }
 
@@ -193,8 +192,8 @@ export default class ContractsSDK {
                         marketItem.collection = collections[marketItem.collectionId - 1];
                     }
                     console.log(marketItem);
-                    marketItem.listings = await this.getMarketListings(marketItemContract, marketItem);
-                    marketItem.offers = await this.getMarketItemOffers(marketItemContract, marketItem);
+                    marketItem.listings = await this.getMarketListings(marketItemContract);
+                    marketItem.offers = await this.getMarketItemOffers(marketItemContract);
                     if(marketItem.isApproved){
                         marketItem.currentListingIndex = marketItem.listings.findIndex(x => x.seller === marketItem.owner);
                     }
@@ -245,8 +244,8 @@ export default class ContractsSDK {
                 marketItem.description = meta.data.description;
                 marketItem.name = meta.data.name;
 
-                marketItem.listings = await this.getMarketListings(bMarketItems[i], marketItem);
-                marketItem.offers = await this.getMarketItemOffers(bMarketItems[i], marketItem);
+                marketItem.listings = await this.getMarketListings(bMarketItems[i]);
+                marketItem.offers = await this.getMarketItemOffers(bMarketItems[i]);
                 marketItem.currentListingIndex = await this.getActiveListingIndex(marketItem.tokenId, nftOwner, marketItem.listings);
                 marketItems.push(marketItem);
             }
@@ -279,11 +278,11 @@ export default class ContractsSDK {
 
     //#endregion READ
 
-    private async getMarketItemOffers(marketItemContract: any, marketItem: IMarketItem) {
+    private async getMarketItemOffers(marketItemContract: any) {
         let offersTxs: any[] = [];
         let offers: IOffer[] = [];
-        marketItemContract.offers.forEach((offers: any) => {
-            let tx = this.marketplace.getOffers(offers);
+        marketItemContract.offers.forEach((offer: any) => {
+            let tx = this.marketplace.getOffer(offer);
             offersTxs.push(tx);
         });
         await Promise.all(offersTxs).then(async (offersContract) => {
@@ -301,7 +300,7 @@ export default class ContractsSDK {
         return offers;
     }
 
-    private async getMarketListings(marketItemContract: any, marketItem: IMarketItem) {
+    private async getMarketListings(marketItemContract: any) {
         let listingsTxs: any[] = [];
         let listings: IListing[] = [];
         console.log("marketItemContract.listings:", marketItemContract.listings);
@@ -321,7 +320,6 @@ export default class ContractsSDK {
                     status: element.status
                 };
                 listings.push(listingMapped);
-                marketItem.listings = listings;
             });
         });
         return listings;
