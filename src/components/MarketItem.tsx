@@ -26,10 +26,7 @@ const MarketItem = (props: IMarketItemPage) => {
     const { tokenId } = useParams();
     const [formInput, updateFormInput] = useState({ price: ''})
     let marketItem: IMarketItem | undefined;
-    console.log(marketItems, tokenId);
-    console.log("ToKEN: ", parseInt(tokenId, 10));
     if (marketItems && tokenId) {
-        console.log("ToKEN: ", parseInt(tokenId, 10));
         marketItem = marketItems.find(x => x.tokenId === parseInt(tokenId, 10));
     }
 

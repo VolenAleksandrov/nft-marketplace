@@ -127,8 +127,8 @@ class App extends React.Component<any, any> {
 
     await contractsSDK.initializeContracts();
 
-    const collections = await contractsSDK.getAllCollections();
-    const marketItems = await contractsSDK.getAllNFTs(collections);
+    // const collections = await contractsSDK.getAllCollections();
+    // const marketItems = await contractsSDK.getAllNFTs(collections);
     
     // contractsSDK.setCollectionToMarketItems(marketItems, collections);
 
@@ -146,9 +146,7 @@ class App extends React.Component<any, any> {
       chainId: network.chainId,
       address,
       connected: true,
-      contractsSDK,
-      collections,
-      marketItems
+      contractsSDK
     });
 
     // await this.setState({
@@ -171,18 +169,7 @@ class App extends React.Component<any, any> {
       contractsSDK.getAllMarketItems();
     }
   }
-  public seedNFT = async () => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      contractsSDK.seedNFTs();
-    }
-  }
-  public seedApproveNFT = async () => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      contractsSDK.seedApproveNFT();
-    }
-  }
+  
   public approveNFT = async (tokenId: number) => {
     const { contractsSDK } = this.state;
     if (contractsSDK !== null) {
@@ -195,18 +182,7 @@ class App extends React.Component<any, any> {
       await contractsSDK.createNFT(tokenURL);
     } 
   }
-  public seedCollection = async () => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      contractsSDK.createSeedCollection();
-    }
-  }
-  public seedListing = async () => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      contractsSDK.createSeedListing();
-    }
-  }
+  
   public createListing = async (collectionId: number, tokenId: number, price: number) => {
     const { contractsSDK } = this.state;
     if (contractsSDK !== null) {
@@ -325,8 +301,6 @@ class App extends React.Component<any, any> {
       connected,
       chainId,
       fetching,
-      collections,
-      marketItems,
       contractsSDK
     } = this.state;
     return (
@@ -342,10 +316,10 @@ class App extends React.Component<any, any> {
               />
               <Routes>
                 <Route path="/create-collection" element={<CreateCollection createCollection={this.createCollection} />} />
-                <Route path='/profile' element={<Profile collections={collections} marketItems={marketItems} userAddress={address} approve={this.approveNFT} createListing={this.createListing} /> } />
-                <Route path="/create-nft" element={<CreateNFT mint={this.createNFT} collections={collections} address={address} />} />
-                <Route path="/marketItems" element={<MarketItems collections={collections} marketItems={marketItems} />} />
-                <Route path="/marketItems/:tokenId" element={<MarketItem buyNFT={this.buyNFT} cancelListing={this.cancelListing} createOffer={this.createOffer} acceptOffer={this.acceptOffer} cancelOffer={this.cancelOffer} marketItems={marketItems} userAddress={address}/>} />
+                <Route path='/profile' element={<Profile collections={contractsSDK.collections} marketItems={contractsSDK.marketItems} userAddress={address} approve={this.approveNFT} createListing={this.createListing} /> } />
+                <Route path="/create-nft" element={<CreateNFT mint={this.createNFT} collections={contractsSDK.collections} address={address} />} />
+                <Route path="/marketItems" element={<MarketItems collections={contractsSDK.collections} marketItems={contractsSDK.marketItems} />} />
+                <Route path="/marketItems/:tokenId" element={<MarketItem buyNFT={this.buyNFT} cancelListing={this.cancelListing} createOffer={this.createOffer} acceptOffer={this.acceptOffer} cancelOffer={this.cancelOffer} marketItems={contractsSDK.marketItems} userAddress={address}/>} />
               </Routes>
             </Router>
           ) : (
