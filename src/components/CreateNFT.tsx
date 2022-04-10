@@ -15,7 +15,6 @@ const CreateNFT = (props: ICreateNFT) => {
     const handleCreateNFTShow = () => setCreateNFTShow(true);
     const handleCreateNFTClose = () => setCreateNFTShow(false);
     const [createNFTFormInput, updateCreateNFTFormInput] = useState({ name: '', description: '', collectionId: '' })
-    const [uplodMetadataStatus, updateUploadMetadataStatus] = useState('');
 
     function onChangeFile(e: any) {
         const file = e.target.files[0];
@@ -41,7 +40,6 @@ const CreateNFT = (props: ICreateNFT) => {
                 image: fileUrl
             }
             const metadata = await ipfs.add(JSON.stringify(metadataFile));
-            updateUploadMetadataStatus(`Upload complete! Minting token with metadata URI: ${metadata.url}`);
             metadataFileUrl = `https://ipfs.infura.io/ipfs/${metadata.path}`;
         }
         mint(metadataFileUrl);

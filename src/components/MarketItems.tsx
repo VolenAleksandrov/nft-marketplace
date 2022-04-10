@@ -12,13 +12,13 @@ interface IMarketItemsPage {
 }
 const MarketItems = (props: IMarketItemsPage) => {
     const { marketItems, userAddress, buyNFT, createOffer } = props;
-    
+
     return (
         <Container className="row">
             {marketItems && marketItems.length > 0 ? (
                 <Container className="row">
                     {marketItems.map((item: IMarketItem, index: number) => (
-                        <Card className="col-md-3" key={index}>
+                        <Card className="col-md-3 mt-2 mr-2 ml-1" key={index}>
                             <Card.Img variant="top" src={item.image} />
                             <Card.Body>
                                 <Card.Title>{item.name}</Card.Title>
@@ -36,7 +36,9 @@ const MarketItems = (props: IMarketItemsPage) => {
                                 ) : (
                                     <Card.Text>Not for sale!</Card.Text>
                                 )}
-                                <Link to={"/marketItems/" + item.tokenId}>Show</Link>
+                                <Card.Footer>
+                                    <Link to={"/marketItems/" + item.tokenId}>Show</Link>
+                                </Card.Footer>
                             </Card.Body>
                         </Card>
                     ))}

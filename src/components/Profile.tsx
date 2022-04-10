@@ -1,20 +1,24 @@
 import React, { useState } from "react";
-import { Accordion, Button, Card, Container, Form, Modal } from "react-bootstrap";
+import { Accordion, Button, Card, Container, Form, Modal, Table } from "react-bootstrap";
 import { Link, useParams } from "react-router-dom";
+import { getStatusName } from "src/helpers/utilities";
 import CreateNFT from "./CreateNFT";
 
 interface IProfilePage {
     collections: ICollection[];
     marketItems: IMarketItem[];
     userAddress: string;
+    userListings: IListing[];
+    userOffers: IOffer[];
     approve: (tokenId: number) => void;
     createListing: (collectionId: number, tokenId: number, price: number) => void;
+    cancelListing: (listingId: number) => void;
+    cancelOffer: (offerId: number) => void;
     createCollection: (name: string, description: string) => void;
     mint: (metadataUrl: string) => void;
 }
 const Profile = (props: IProfilePage) => {
-    const { collections, marketItems, userAddress, approve, createListing, createCollection, mint } = props;
-    console.log(marketItems);
+    const { collections, marketItems, userAddress, userListings, userOffers, approve, createListing, createCollection, mint, cancelListing, cancelOffer } = props;
     const { profileAddress } = useParams();
     const zeroCollectionId = 0;
     let profileItems: IMarketItem[] = [];
@@ -25,13 +29,11 @@ const Profile = (props: IProfilePage) => {
         if (marketItems) {
             profileItems = marketItems.filter(x => {
                 if (profileAddress) {
-                    console.log(x, x.owner.toLocaleLowerCase() === profileAddress.toLocaleLowerCase());
                     return x.owner.toLocaleLowerCase() === profileAddress.toLocaleLowerCase();
                 }
                 return false;
             });
         }
-        console.log("ProfileItems: ", profileItems);
         if (collections) {
             profileCollections = collections.filter(x => {
                 if (profileAddress) {
@@ -40,20 +42,25 @@ const Profile = (props: IProfilePage) => {
                 return false;
             });
         }
-        console.log("ProfileCollections: ", profileCollections);
     }
 
     const [createListingFormInput, updateCreateListingFormInput] = useState({ price: 0, collectionId: 0 });
     const [createCollectionFormInput, updateCreateCollectionFormInput] = useState({ name: '', description: '' });
     const [tokenId, setTokenId] = useState(0);
+    const [collectionId, setCollectionId] = useState(0);
 
     const [showCreateListing, setCreateListingShow] = useState(false);
     const [showCreateCollection, setCreateCollectionShow] = useState(false);
 
     const handleCreateListingClose = () => setCreateListingShow(false);
     const handleCreateCollectionClose = () => setCreateCollectionShow(false);
-    const handleCreateListingShow = (token: number) => {
+    const handleCreateListingShow = (token: number, itemId: number) => {
         setTokenId(token);
+        const item = profileItems.find(x => x.collectionId !== 0);
+        if (item) {
+            setCollectionId(item.collectionId);
+            updateCreateListingFormInput({ ...createListingFormInput, collectionId: item.collectionId });
+        }
         setCreateListingShow(true);
     }
     const handleCreateCollectionShow = () => setCreateCollectionShow(true);
@@ -67,7 +74,6 @@ const Profile = (props: IProfilePage) => {
             alert('Please select collection!');
             return;
         }
-        console.log(collectionId, tokenId, price);
         createListing(collectionId, tokenId, price);
     }
     async function onsCreateCollectionSubmit(e: any) {
@@ -99,7 +105,7 @@ const Profile = (props: IProfilePage) => {
                     </>
                 ) : null}
                 <Container className="row">
-                    <h2>All Users`s items</h2>
+                    <h2>All User items</h2>
                     {profileItems.map((item: IMarketItem, index: number) => (
                         <Card className="col-md-3" key={index}>
                             <Card.Img variant="top" src={item.image} />
@@ -123,7 +129,7 @@ const Profile = (props: IProfilePage) => {
                         </Card>
                     ))}
                 </Container>
-                <h2>User`s collections</h2>
+                <h2>All User collections</h2>
                 <Accordion defaultActiveKey="0" alwaysOpen>
                     {profileCollections.length > 0 ? (
                         <>
@@ -188,6 +194,78 @@ const Profile = (props: IProfilePage) => {
             </Container>
             <Container className="row">
                 <h3>Listings and offers</h3>
+                <Container className="row">
+                    <Accordion className="col-md-12" defaultActiveKey="0">
+                        <Accordion.Item eventKey="0">
+                            <Accordion.Header>Listings</Accordion.Header>
+                            <Accordion.Body>
+                                <Table striped bordered hover size="sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Seller</th>
+                                            <th>Buyer</th>
+                                            <th>Price</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {userListings.map((listing: IListing, index: number) => (
+                                            <tr key={index}>
+                                                <td><Link to={"/marketItems/" + listing.tokenId}>Item</Link></td>
+                                                <td>Seller: <Link to={"/profile/" + listing.seller}>Profile</Link></td>
+                                                <td>Buyer: <Link to={"/profile/" + listing.buyer}>Profile</Link></td>
+                                                <td>{listing.price} ETH</td>
+                                                <td>{getStatusName(listing.status)}</td>
+                                                <td>
+                                                    <>
+                                                        {listing.status === 0 && listing.seller === userAddress ? (
+                                                            <Button className="btn" onClick={cancelListing.bind(null, listing.id)}>Cancel</Button>
+                                                        ) : null}
+                                                    </>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </Accordion.Body>
+                        </Accordion.Item>
+                        <Accordion.Item eventKey="1">
+                            <Accordion.Header>Offers</Accordion.Header>
+                            <Accordion.Body>
+                                <Table striped bordered hover size="sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Offerer</th>
+                                            <th>Price</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {userOffers.map((offer: IOffer, index: number) => (
+                                            <tr key={index}>
+                                                <td><Link to={"/marketItems/" + offer.tokenId}>Item</Link></td>
+                                                <td>Offerer: <Link to={"/profile/" + offer.offerer}>Profile</Link></td>
+                                                <td>{offer.price} ETH</td>
+                                                <td>{getStatusName(offer.status)}</td>
+                                                <td>
+                                                    <>
+                                                        {offer.status === 0 ? (
+                                                            <Button className="btn" onClick={cancelOffer.bind(null, offer.id)}>Cancel</Button>
+                                                        ) : null}
+                                                    </>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </Accordion.Body>
+                        </Accordion.Item>
+                    </Accordion>
+                </Container>
             </Container>
             <Modal show={showCreateListing} onHide={handleCreateListingClose}>
                 <Modal.Header closeButton>
@@ -210,7 +288,14 @@ const Profile = (props: IProfilePage) => {
                                 <Form.Control as="select" aria-label="Collection select" onChange={e => updateCreateListingFormInput({ ...createListingFormInput, collectionId: parseInt(e.target.value, 10) })}>
                                     <option>Select collection</option>
                                     {profileCollections.map((collection: ICollection, index: number) => (
-                                        <option key={index} value={collection.id}>{collection.name}</option>
+                                        <>
+                                            {collectionId === collection.id ? (
+                                                <option selected key={index} value={collection.id}>{collection.name}</option>
+                                            ) : (
+                                                <option key={index} value={collection.id}>{collection.name}</option>
+                                            )}
+                                        </>
+
                                     ))}
                                 </Form.Control>
                             </Form.Group>

@@ -24,7 +24,7 @@ const CreateOffer = (props: ICreateOffer) => {
 
     return (
         <>
-            <Button className="btn btn-primary col-md-12" variant="primary" onClick={handleCreateOfferShow}>Create offer</Button>
+            <Button className="col-md-12 mt-2" variant="primary" onClick={handleCreateOfferShow}>Create offer</Button>
             <Modal show={createOfferShow} onHide={handleCreateOfferClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>Create offer</Modal.Title>

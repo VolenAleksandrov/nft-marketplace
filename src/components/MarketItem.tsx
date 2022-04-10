@@ -47,10 +47,13 @@ const MarketItem = (props: IMarketItemPage) => {
                                 </Accordion.Item>
                             </Accordion>
                             {marketItem.owner !== userAddress ? (<CreateOffer createOffer={createOffer} tokenId={parseInt(tokenId, 10)}/>) : null}
+                            {marketItem.currentListingIndex > 0 && marketItem.listings[marketItem.currentListingIndex].seller !== userAddress ? (
+                                                                <Button className="btn col-md-12 mt-2" onClick={buyNFT.bind(null, marketItem.listings[marketItem.currentListingIndex].id, marketItem.listings[marketItem.currentListingIndex].price)}>Buy now for: {marketItem.listings[marketItem.currentListingIndex].price}ETH</Button>
+                                                            ) : null}
                         </Container>
                     </Container>
                     <Container className="row">
-                        <Accordion className="col-md-12" defaultActiveKey="0">
+                        <Accordion className="col-md-12 mt-2" defaultActiveKey="0">
                             <Accordion.Item eventKey="0">
                                 <Accordion.Header>Listings</Accordion.Header>
                                 <Accordion.Body>
