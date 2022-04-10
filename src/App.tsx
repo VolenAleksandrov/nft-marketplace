@@ -1,21 +1,14 @@
 import * as React from 'react';
-// import styled from 'styled-components';
 
 import Web3Modal from 'web3modal';
-// @ts-ignore
 import WalletConnectProvider from '@walletconnect/web3-provider';
-import Column from './components/Column';
-// import Wrapper from './components/Wrapper';
 import Header from './components/Header';
 import Loader from './components/Loader';
 import "bootstrap/dist/css/bootstrap.css";
 
-// import { Web3Provider } from '@ethersproject/providers';
 import { getChainData } from './helpers/utilities';
-import CreateCollection from './components/CreateCollection';
 
 import ContractsSDK from './contractsSKD';
-// import Button from './components/Button';
 import {
   BrowserRouter as Router,
   Routes,
@@ -23,44 +16,9 @@ import {
 } from "react-router-dom";
 import MarketItems from './components/MarketItems';
 import ConnectButton from './components/ConnectButton';
-import CreateNFT from './components/CreateNFT';
 import { Container } from 'react-bootstrap';
 import MarketItem from './components/MarketItem';
 import Profile from './components/Profile';
-// const SLayout = styled.div`
-//   position: relative;
-//   width: 100%;
-//   min-height: 100vh;
-//   text-align: center;
-// `;
-
-// const SContent = styled(Wrapper)`
-//   width: 100%;
-//   height: 100%;
-//   padding: 0 16px;
-// `;
-
-// const SContainer = styled.div`
-//   height: 100%;
-//   min-height: 200px;
-//   display: flex;
-//   flex-direction: column;
-//   justify-content: center;
-//   align-items: center;
-//   word-break: break-word;
-// `;
-
-// const SLanding = styled(Column)`
-//   height: 600px;
-// `;
-
-// // @ts-ignore
-// const SBalances = styled(SLanding)`
-//   height: 100%;
-//   & h3 {
-//     padding-top: 30px;
-//   }
-// `;
 
 interface IAppState {
   fetching: boolean;
@@ -70,7 +28,7 @@ interface IAppState {
   chainId: number;
   pendingRequest: boolean;
   result: any | null;
-  contractsSDK: ContractsSDK | null;
+  // contractsSDK: ContractsSDK | null;
   info: any | null;
   collections: ICollection[] | null;
   marketItems: IMarketItem[] | null;
@@ -84,19 +42,15 @@ const INITIAL_STATE: IAppState = {
   chainId: 1,
   pendingRequest: false,
   result: null,
-  contractsSDK: null,
   info: null,
   collections: null,
   marketItems: null
 };
 
 class App extends React.Component<any, any> {
-  // @ts-ignore
   public web3Modal: Web3Modal;
   public state: IAppState;
   private contractsSDK: any;
-  // public provider: any;
-
   constructor(props: any) {
     super(props);
     this.state = {
@@ -117,116 +71,91 @@ class App extends React.Component<any, any> {
   }
 
   public onConnect = async () => {
+    await this.setState({ fetching: true });
     const provider = await this.web3Modal.connect();
-    console.log("onConnect:Provider: ", provider);
-    const contractsSDK = ContractsSDK.getInstance(provider);
+    this.contractsSDK = new ContractsSDK(provider);
 
-    const network = await contractsSDK.getNetwork();
-    const library = contractsSDK.getLibrary();
-    const address = contractsSDK.getAddress();
+    const network = await this.contractsSDK.getNetwork();
+    const library = this.contractsSDK.getLibrary();
+    const address = this.contractsSDK.getAddress();
 
-    await contractsSDK.initializeContracts();
+    await this.contractsSDK.initializeContracts();
 
-    // const collections = await contractsSDK.getAllCollections();
-    // const marketItems = await contractsSDK.getAllNFTs(collections);
-    
-    // contractsSDK.setCollectionToMarketItems(marketItems, collections);
-
-    // fetching: boolean;
-    // address: string;
-    // library: any;
-    // connected: boolean;
-    // chainId: number;
-    // pendingRequest: boolean;
-    // result: any | null;
-    // contractsSDK: any | null;
-    // info: any | null;
     await this.setState({
       library,
       chainId: network.chainId,
       address,
-      connected: true,
-      contractsSDK
+      connected: true
     });
-
-    // await this.setState({
-    //   marketItems: contractsSDK.getAllNFTs()
-    // })
-
     await this.subscribeToProviderEvents(provider);
+    await this.setState({ fetching: false });
 
   };
   public buyNFT = async (listingId: number, price: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.buyMarketItem(listingId, price);
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.buyMarketItem(listingId, price);
+      await this.setState({ fetching: false });
     }
   }
-  public getNFTs = async () => {
-    console.log("getAllNFTs");
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      contractsSDK.getAllMarketItems();
-    }
-  }
-  
   public approveNFT = async (tokenId: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.giveApprovalToMarketplace(tokenId);
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.giveApprovalToMarketplace(tokenId);
+      await this.setState({ fetching: false });
     }
   }
-  public createNFT = async (tokenURL:string) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.createNFT(tokenURL);
-    } 
-  }
-  
-  public createListing = async (collectionId: number, tokenId: number, price: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.createListing(collectionId, tokenId, price);
+  public createNFT = async (tokenURL: string) => {
+    console.log("createNFT", tokenURL);
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.createNFT(tokenURL);
+      await this.setState({ fetching: false });
     }
-  }
-
-  public createOffer = async (tokenId: number, price: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.createOffer(tokenId, price);
-    }
-  }
-
-  public cancelOffer = async(offerId: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.cancelOffer(offerId);
-    }
-  }
-
-  public acceptOffer = async (offerId: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.acceptOffer(offerId);
-    }
-  }
-
-  public cancelListing = async (listingId: number) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      await contractsSDK.cancelListing(listingId);
-    }
-  }
-  public loadBCollections = async () => {
-    const { collections } = this.state;
-    console.log("Loaded: ", collections);
   }
   public createCollection = async (name: string, description: string) => {
-    const { contractsSDK } = this.state;
-    if (contractsSDK !== null) {
-      contractsSDK.createCollection(name, description);
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.createCollection(name, description);
+      await this.setState({ fetching: false });
     }
   }
+  public createListing = async (collectionId: number, tokenId: number, price: number) => {
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.createListing(collectionId, tokenId, price);
+      await this.setState({ fetching: false });
+    }
+  }
+  public createOffer = async (tokenId: number, price: number) => {
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.createOffer(tokenId, price);
+      await this.setState({ fetching: false });
+    }
+  }
+  public cancelOffer = async (offerId: number) => {
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.cancelOffer(offerId);
+      await this.setState({ fetching: false });
+    }
+  }
+  public acceptOffer = async (offerId: number) => {
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.acceptOffer(offerId);
+      await this.setState({ fetching: false });
+    }
+  }
+  public cancelListing = async (listingId: number) => {
+    if (this.contractsSDK !== null) {
+      await this.setState({ fetching: true });
+      await this.contractsSDK.cancelListing(listingId);
+      await this.setState({ fetching: false });
+    }
+  }
+ 
   public subscribeToProviderEvents = async (provider: any) => {
     if (!provider.on) {
       return;
@@ -300,13 +229,12 @@ class App extends React.Component<any, any> {
       address,
       connected,
       chainId,
-      fetching,
-      contractsSDK
+      fetching
     } = this.state;
     return (
       <Container className="p-3">
         <Container className="md-12">
-          {contractsSDK && !fetching ? (
+          {this.contractsSDK && !fetching ? (
             <Router>
               <Header
                 connected={connected}
@@ -315,24 +243,53 @@ class App extends React.Component<any, any> {
                 killSession={this.resetApp}
               />
               <Routes>
-                <Route path="/create-collection" element={<CreateCollection createCollection={this.createCollection} />} />
-                <Route path='/profile' element={<Profile collections={contractsSDK.collections} marketItems={contractsSDK.marketItems} userAddress={address} approve={this.approveNFT} createListing={this.createListing} /> } />
-                <Route path="/create-nft" element={<CreateNFT mint={this.createNFT} collections={contractsSDK.collections} address={address} />} />
-                <Route path="/marketItems" element={<MarketItems collections={contractsSDK.collections} marketItems={contractsSDK.marketItems} />} />
-                <Route path="/marketItems/:tokenId" element={<MarketItem buyNFT={this.buyNFT} cancelListing={this.cancelListing} createOffer={this.createOffer} acceptOffer={this.acceptOffer} cancelOffer={this.cancelOffer} marketItems={contractsSDK.marketItems} userAddress={address}/>} />
+                <Route
+                  path='/profile'
+                  element={
+                    <Profile
+                      mint={this.createNFT}
+                      createCollection={this.createCollection}
+                      approve={this.approveNFT}
+                      createListing={this.createListing}
+                      userCollections={this.contractsSDK.userCollections}
+                      userMarketItems={this.contractsSDK.userMarketItems}
+                      userAddress={address}
+                    />
+                  }
+                />
+                <Route
+                  path="/"
+                  element={
+                    <MarketItems
+                      buyNFT={this.buyNFT}
+                      createOffer={this.createOffer}
+                      userAddress={address}
+                      collections={this.contractsSDK.collections}
+                      marketItems={this.contractsSDK.marketItems}
+                    />
+                  }
+                />
+                <Route
+                  path="/marketItems/:tokenId"
+                  element={
+                    <MarketItem
+                      buyNFT={this.buyNFT}
+                      cancelListing={this.cancelListing}
+                      createOffer={this.createOffer}
+                      acceptOffer={this.acceptOffer}
+                      cancelOffer={this.cancelOffer}
+                      marketItems={this.contractsSDK.marketItems}
+                      userAddress={address}
+                    />
+                  }
+                />
               </Routes>
             </Router>
-          ) : (
-            <Container className="p-5 mb-4 md-4">
-              {!this.state.connected && <ConnectButton onClick={this.onConnect} />}
-            </Container>
-          )}
+          ) : null}
           {fetching ? (
-            <Column center>
-              <Container>
-                <Loader />
-              </Container>
-            </Column>
+            <Container className="col-md-2 col-md-offset-5">
+              <Loader />
+            </Container>
           ) : (
             <Container>
               {!this.state.connected && <ConnectButton onClick={this.onConnect} />}

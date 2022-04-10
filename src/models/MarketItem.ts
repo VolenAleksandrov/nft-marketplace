@@ -10,6 +10,6 @@ interface IMarketItem {
     currentListingIndex: number;
     listings: IListing[];
     offers: IOffer[];
-    owner?: string;
+    owner: string;
     isApproved: boolean;
 }

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Accordion, Button, Container, Form, Image, Modal, Table } from "react-bootstrap";
+import React from "react";
+import { Accordion, Button, Container, Image, Table } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import { getStatusName } from "src/helpers/utilities";
+import CreateOffer from "./CreateOffer";
 
 interface IMarketItemPage {
-    // collections: ICollection[] | null;
     marketItems: IMarketItem[] | null;
     userAddress: string;
     buyNFT: (listingId: number, price: number) => void;
@@ -12,44 +12,18 @@ interface IMarketItemPage {
     createOffer: (marketItemId: number, price: number) => void;
     acceptOffer: (offerId: number) => void;
     cancelOffer: (offerId: number) => void;
-    // seedCollection: () => void
-    // createCollection: (name: string, description: string) => void
-    //   killSession: () => void
-    //   onCreateCollection: () => void
-    //   connected: boolean
-    //   address: string
-    //   chainId: number
 }
 const MarketItem = (props: IMarketItemPage) => {
     const { marketItems, userAddress, buyNFT, cancelListing, acceptOffer, cancelOffer, createOffer } = props;
-    const [show, setShow] = useState(false);
     const { tokenId } = useParams();
-    const [formInput, updateFormInput] = useState({ price: ''})
     let marketItem: IMarketItem | undefined;
     if (marketItems && tokenId) {
         marketItem = marketItems.find(x => x.tokenId === parseInt(tokenId, 10));
     }
 
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
-
-    const onSubmit = () => {
-        const { price } = formInput;
-        if (!price) {
-            alert('Please add a price!');
-            return;
-        }
-        if(marketItem)
-        {
-            createOffer(marketItem.tokenId, parseFloat(price));
-        }
-    }
-
-    // console.log("MarketItemsPage:collections: ", collection);
-    console.log("MarketItemPage:marketItems: ", marketItems, userAddress);
     return (
         <Container className="row">
-            {marketItem ? (
+            {marketItem && tokenId ? (
                 <Container className="row">
                     <Container className="row">
                         <h3 className="col-md-12 page-header">{marketItem.name}</h3>
@@ -72,34 +46,8 @@ const MarketItem = (props: IMarketItemPage) => {
                                     </Accordion.Body>
                                 </Accordion.Item>
                             </Accordion>
-                            {marketItem.owner !== userAddress ? (<Button className="btn" variant="primary" onClick={handleShow}>Create offer</Button>) : null}
+                            {marketItem.owner !== userAddress ? (<CreateOffer createOffer={createOffer} tokenId={parseInt(tokenId, 10)}/>) : null}
                         </Container>
-                        <Modal show={show} onHide={handleClose}>
-                            <Modal.Header closeButton>
-                                <Modal.Title>Create offer</Modal.Title>
-                            </Modal.Header>
-                            <Modal.Body>
-                                <Form onSubmit={onSubmit}>
-                                    <Form.Group className="mb-3" controlId="price">
-                                        <label>Price</label>
-                                        <Form.Control
-                                            type="number"
-                                            placeholder="1.132 ETH"
-                                            autoFocus
-                                            onChange={e => updateFormInput({ ...formInput, price: e.target.value })}
-                                        />
-                                    </Form.Group>
-                                </Form>
-                            </Modal.Body>
-                            <Modal.Footer>
-                                <Button variant="secondary" onClick={handleClose}>
-                                    Close
-                                </Button>
-                                <Button variant="primary" onClick={onSubmit}>
-                                    Create
-                                </Button>
-                            </Modal.Footer>
-                        </Modal>
                     </Container>
                     <Container className="row">
                         <Accordion className="col-md-12" defaultActiveKey="0">

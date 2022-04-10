@@ -10,21 +10,23 @@ import MARKETPLACE from "./constants/abis/NFTMarketplace.json";
 import axios from 'axios';
 // TODO: remove console.logs and change variables names
 export default class ContractsSDK {
-    public static getInstance(provider: any) {
-        if (ContractsSDK.instance == null) {
-            ContractsSDK.instance = new ContractsSDK(provider);
-        }
+    // public static getInstance(provider: any) {
+    //     if (ContractsSDK.instance == null) {
+    //         ContractsSDK.instance = new ContractsSDK(provider);
+    //     }
 
-        return this.instance;
-    }
-    private static instance: any = null;
+    //     return this.instance;
+    // }
+    // private static instance: any = null;
     public marketItems: IMarketItem[] | null;
     public collections: ICollection[] | null;
+    public userMarketItems: IMarketItem[] | null;
+    public userCollections: ICollection[] | null;
     private provider: any;
     private library: Web3Provider;
     private nft: Contract;
     private marketplace: Contract;
-    private address: any;
+    private address: string;
     
 
     constructor(provider: any) {
@@ -66,9 +68,12 @@ export default class ContractsSDK {
     //#region WRITE
 
     public async createNFT(url: string): Promise<any> {
+        console.log(url);
         const tx = await this.nft.createToken(url);
         await tx.wait();
+        console.log("after tx.wait");
         await this.loadItems();
+        console.log("after loadItems");
     }
 
     public async createCollection(name: string, description: string): Promise<any> {
@@ -153,14 +158,15 @@ export default class ContractsSDK {
                     offers: [],
                     listings: [],
                     owner: ethers.utils.getAddress(owner),
-                    isApproved: false
+                    isApproved: false,
+                    collectionId: 0
                 }
                 const marketItemContractId = await this.marketplace.getMarketItemByAddressAndTokenId(this.nft.address, marketItem.tokenId);
                 const nftApproved = await this.nft.getApproved(marketItem.tokenId);
                 marketItem.isApproved = nftApproved === this.marketplace.address;
                 if (marketItemContractId.toNumber() > 0) {
                     const marketItemContract = await this.marketplace.getMarketItem(marketItemContractId);
-                    marketItem.id = marketItemContract.id;
+                    marketItem.id = marketItemContract.id.toNumber();
                     marketItem.collectionId = marketItemContract.collectionId.toNumber();
                     if(marketItem.collectionId){
                         marketItem.collection = collections[marketItem.collectionId - 1];
@@ -178,12 +184,6 @@ export default class ContractsSDK {
         });
         this.marketItems = marketItems;
         return marketItems;
-    }
-
-    public setCollectionToMarketItems(marketItems: IMarketItem[], collections: ICollection[]) {
-        marketItems.forEach(item => {
-            item.collection = collections.find(x => x.id == item.collectionId);
-        });
     }
 
     public async getAllMarketItems() {
@@ -239,7 +239,7 @@ export default class ContractsSDK {
         await Promise.all(collectionsTxs).then(async bCollections => {
             for (let i = 0; i < bCollections.length; i++) {
                 const collection: ICollection = {
-                    id: bCollections[i].id,
+                    id: bCollections[i].id.toNumber(),
                     name: bCollections[i].name,
                     description: bCollections[i].description,
                     owner: ethers.utils.getAddress(bCollections[i].owner)
@@ -255,6 +255,20 @@ export default class ContractsSDK {
     private async loadItems() {
         this.collections = await this.getAllCollections();
         this.marketItems = await this.getAllNFTs(this.collections);
+        this.setUserCollections();
+        this.setUserItems();
+    }
+
+    private setUserCollections(): void {
+        if (this.collections) {
+            this.userCollections = this.collections.filter(x => x.owner.toLocaleLowerCase() === this.address.toLocaleLowerCase());
+        }
+    }
+
+    private setUserItems(): void {
+        if (this.marketItems) {
+            this.userMarketItems = this.marketItems.filter(x => x.owner.toLocaleLowerCase() === this.address.toLocaleLowerCase());
+        }
     }
 
     private async getMarketItemOffers(marketItemContract: any) {
