@@ -29,9 +29,7 @@ const CreateNFT = (props: ICreateNFT) => {
         let metadataFileUrl = '';
         try {
             const added = await ipfs.add(file);
-            console.log("added: ", added);
             fileUrl = `https://ipfs.infura.io/ipfs/${added.path}`;
-            console.log("URL: ", fileUrl);
         } catch (error) {
             console.log('Error uploading file: ', error);
         }
@@ -42,12 +40,9 @@ const CreateNFT = (props: ICreateNFT) => {
                 description,
                 image: fileUrl
             }
-            console.log("Metadata stringify: ", metadataFile);
             const metadata = await ipfs.add(JSON.stringify(metadataFile));
             updateUploadMetadataStatus(`Upload complete! Minting token with metadata URI: ${metadata.url}`);
             metadataFileUrl = `https://ipfs.infura.io/ipfs/${metadata.path}`;
-            console.log(`https://ipfs.infura.io/ipfs/${metadata.path}`);
-            console.log(uplodMetadataStatus);
         }
         mint(metadataFileUrl);
     }

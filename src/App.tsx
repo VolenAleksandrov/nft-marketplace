@@ -106,7 +106,6 @@ class App extends React.Component<any, any> {
     }
   }
   public createNFT = async (tokenURL: string) => {
-    console.log("createNFT", tokenURL);
     if (this.contractsSDK !== null) {
       await this.setState({ fetching: true });
       await this.contractsSDK.createNFT(tokenURL);
@@ -254,8 +253,12 @@ class App extends React.Component<any, any> {
                       createCollection={this.createCollection}
                       approve={this.approveNFT}
                       createListing={this.createListing}
+                      cancelListing={this.cancelListing}
+                      cancelOffer={this.cancelOffer}
                       collections={this.contractsSDK.collections}
                       marketItems={this.contractsSDK.marketItems}
+                      userListings={this.contractsSDK.userListings}
+                      userOffers={this.contractsSDK.userOffers}
                       userAddress={address}
                     />
                   }
