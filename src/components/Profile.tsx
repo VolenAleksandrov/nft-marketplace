@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Accordion, Button, Card, Container, Form, Modal } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import CreateNFT from "./CreateNFT";
 
 interface IProfilePage {
-    userCollections: ICollection[];
-    userMarketItems: IMarketItem[];
+    collections: ICollection[];
+    marketItems: IMarketItem[];
     userAddress: string;
     approve: (tokenId: number) => void;
     createListing: (collectionId: number, tokenId: number, price: number) => void;
@@ -13,8 +13,36 @@ interface IProfilePage {
     mint: (metadataUrl: string) => void;
 }
 const Profile = (props: IProfilePage) => {
-    const { userCollections, userMarketItems, userAddress, approve, createListing, createCollection, mint } = props;
-    console.log(userMarketItems);
+    const { collections, marketItems, userAddress, approve, createListing, createCollection, mint } = props;
+    console.log(marketItems);
+    const { profileAddress } = useParams();
+    const zeroCollectionId = 0;
+    let profileItems: IMarketItem[] = [];
+    let profileCollections: ICollection[] = [];
+    let isCurrentUserProfile: boolean = false;
+    if (profileAddress) {
+        isCurrentUserProfile = profileAddress.toLocaleLowerCase() === userAddress.toLocaleLowerCase();
+        if (marketItems) {
+            profileItems = marketItems.filter(x => {
+                if (profileAddress) {
+                    console.log(x, x.owner.toLocaleLowerCase() === profileAddress.toLocaleLowerCase());
+                    return x.owner.toLocaleLowerCase() === profileAddress.toLocaleLowerCase();
+                }
+                return false;
+            });
+        }
+        console.log("ProfileItems: ", profileItems);
+        if (collections) {
+            profileCollections = collections.filter(x => {
+                if (profileAddress) {
+                    return x.owner.toLocaleLowerCase() === profileAddress.toLocaleLowerCase();
+                }
+                return false;
+            });
+        }
+        console.log("ProfileCollections: ", profileCollections);
+    }
+
     const [createListingFormInput, updateCreateListingFormInput] = useState({ price: 0, collectionId: 0 });
     const [createCollectionFormInput, updateCreateCollectionFormInput] = useState({ name: '', description: '' });
     const [tokenId, setTokenId] = useState(0);
@@ -64,15 +92,46 @@ const Profile = (props: IProfilePage) => {
     return (
         <>
             <Container className="row">
-                <Button className="btn btn-primary col-md-2" variant="primary" onClick={handleCreateCollectionShow}>Create collection</Button>
-                <CreateNFT mint={mint} collections={userCollections} address={userAddress} />
-                {userCollections.length > 0 ? (
-                    <Accordion defaultActiveKey="0" alwaysOpen>
-                        {userCollections.map((collection: ICollection, index: number) => (
+                {isCurrentUserProfile ? (
+                    <>
+                        <Button className="col-md-2 left" variant="primary" onClick={handleCreateCollectionShow}>Create collection</Button>
+                        <CreateNFT mint={mint} collections={profileCollections} address={userAddress} />
+                    </>
+                ) : null}
+                <Container className="row">
+                    <h2>All Users`s items</h2>
+                    {profileItems.map((item: IMarketItem, index: number) => (
+                        <Card className="col-md-3" key={index}>
+                            <Card.Img variant="top" src={item.image} />
+                            <Card.Body>
+                                <Card.Title>{item.name}</Card.Title>
+                                <Card.Text>{item.description}</Card.Text>
+                                {item.listings && item.currentListingIndex >= 0 ? (
+                                    <Card.Text>Price: {item.listings[item.currentListingIndex].price} ETH</Card.Text>
+                                ) : (
+                                    <>
+                                        <Card.Text>Not listed!</Card.Text>
+                                        {isCurrentUserProfile && item.isApproved ? (<Button className="btn" variant="primary" onClick={handleCreateListingShow.bind(null, item.tokenId)}>Create listing</Button>) : null}
+                                    </>
+                                )}
+                                {!item.isApproved && isCurrentUserProfile ? <Button onClick={approveNFT.bind(null, item.tokenId)}>Approve</Button> : null}
+                                {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
+                                <Card.Footer>
+                                    <Link to={"/marketItems/" + item.tokenId}>Show</Link>
+                                </Card.Footer>
+                            </Card.Body>
+                        </Card>
+                    ))}
+                </Container>
+                <h2>User`s collections</h2>
+                <Accordion defaultActiveKey="0" alwaysOpen>
+                    {profileCollections.length > 0 ? (
+                        <>
+                            {profileCollections.map((collection: ICollection, index: number) => (
                                 <Accordion.Item eventKey={(index + 1).toString()} key={index}>
                                     <Accordion.Header>{collection.name}</Accordion.Header>
                                     <Accordion.Body className="row">
-                                        {userMarketItems.filter(x => x.collectionId === collection.id).map((item: IMarketItem, index: number) => (
+                                        {profileItems.filter(x => x.collectionId === collection.id).map((item: IMarketItem, index: number) => (
                                             <Card className="col-md-3" key={index}>
                                                 <Card.Img variant="top" src={item.image} />
                                                 <Card.Body>
@@ -83,43 +142,49 @@ const Profile = (props: IProfilePage) => {
                                                     ) : (
                                                         <>
                                                             <Card.Text>Not listed!</Card.Text>
-                                                            <Button className="btn" variant="primary" onClick={handleCreateListingShow.bind(null, item.tokenId)}>Create listing</Button>
-                                                        </>)}
-                                                    {!item.isApproved ? <Button onClick={approveNFT.bind(null, item.tokenId)}>Approve</Button> : null}
+                                                            {isCurrentUserProfile && item.isApproved ? (<Button className="btn" variant="primary" onClick={handleCreateListingShow.bind(null, item.tokenId)}>Create listing</Button>) : null}
+                                                        </>
+                                                    )}
+                                                    {!item.isApproved && isCurrentUserProfile ? <Button onClick={approveNFT.bind(null, item.tokenId)}>Approve</Button> : null}
                                                     {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
-                                                    <Link to={"/marketItems/" + item.tokenId}>Show</Link>
+                                                    <Card.Footer>
+                                                        <Link to={"/marketItems/" + item.tokenId}>Show</Link>
+                                                    </Card.Footer>
                                                 </Card.Body>
                                             </Card>
                                         ))}
                                     </Accordion.Body>
                                 </Accordion.Item>
-                        ))}
-                        <Accordion.Item eventKey="0">
-                            <Accordion.Header>Items that are not in any collection</Accordion.Header>
-                            <Accordion.Body className="row">
-                                {userMarketItems.filter(x => x.collectionId === 0).map((item: IMarketItem, index: number) => (
-                                    <Card className="col-md-3" key={index}>
-                                        <Card.Img variant="top" src={item.image} />
-                                        <Card.Body>
-                                            <Card.Title>{item.name}</Card.Title>
-                                            <Card.Text>{item.description}</Card.Text>
-                                            {item.listings && item.currentListingIndex >= 0 ? (
-                                                <Card.Text>Price: {item.listings[item.currentListingIndex].price} ETH</Card.Text>
-                                            ) : (
-                                                <>
-                                                    <Card.Text>Not listed!</Card.Text>
-                                                    <Button className="btn" variant="primary" onClick={handleCreateListingShow.bind(null, item.tokenId)}>Create listing</Button>
-                                                </>)}
-                                            {!item.isApproved ? <Button onClick={approveNFT.bind(null, item.tokenId)}>Approve</Button> : null}
-                                            {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
+                            ))}
+                        </>
+                    ) : null}
+                    <Accordion.Item eventKey="0">
+                        <Accordion.Header>Items that are not in any collection</Accordion.Header>
+                        <Accordion.Body className="row">
+                            {profileItems.filter(x => x.collectionId === zeroCollectionId).map((item: IMarketItem, index: number) => (
+                                <Card className="col-md-3" key={index}>
+                                    <Card.Img variant="top" src={item.image} />
+                                    <Card.Body>
+                                        <Card.Title>{item.name}</Card.Title>
+                                        <Card.Text>{item.description}</Card.Text>
+                                        {item.listings && item.currentListingIndex >= 0 ? (
+                                            <Card.Text>Price: {item.listings[item.currentListingIndex].price} ETH</Card.Text>
+                                        ) : (
+                                            <>
+                                                <Card.Text>Not listed!</Card.Text>
+                                                {isCurrentUserProfile && item.isApproved ? (<Button className="btn" variant="primary" onClick={handleCreateListingShow.bind(null, item.tokenId)}>Create listing</Button>) : null}
+                                            </>)}
+                                        {!item.isApproved && isCurrentUserProfile ? <Button onClick={approveNFT.bind(null, item.tokenId)}>Approve</Button> : null}
+                                        {/* <Link to={`${url}/${item.id}`}>Open</Link> */}
+                                        <Card.Footer>
                                             <Link to={"/marketItems/" + item.tokenId}>Show</Link>
-                                        </Card.Body>
-                                    </Card>
-                                ))}
-                            </Accordion.Body>
-                        </Accordion.Item>
-                    </Accordion>
-                ) : null}
+                                        </Card.Footer>
+                                    </Card.Body>
+                                </Card>
+                            ))}
+                        </Accordion.Body>
+                    </Accordion.Item>
+                </Accordion>
             </Container>
             <Container className="row">
                 <h3>Listings and offers</h3>
@@ -139,12 +204,12 @@ const Profile = (props: IProfilePage) => {
                                 onChange={e => updateCreateListingFormInput({ ...createListingFormInput, price: parseFloat(e.target.value) })}
                             />
                         </Form.Group>
-                        {userCollections.length > 0 ? (
+                        {profileCollections.length > 0 ? (
                             <Form.Group className="mb-3">
                                 <label>Collection</label>
                                 <Form.Control as="select" aria-label="Collection select" onChange={e => updateCreateListingFormInput({ ...createListingFormInput, collectionId: parseInt(e.target.value, 10) })}>
                                     <option>Select collection</option>
-                                    {userCollections.map((collection: ICollection, index: number) => (
+                                    {profileCollections.map((collection: ICollection, index: number) => (
                                         <option key={index} value={collection.id}>{collection.name}</option>
                                     ))}
                                 </Form.Control>

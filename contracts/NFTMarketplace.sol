@@ -9,7 +9,7 @@ import "./NFT.sol";
 contract NFTMarketplace is Wallet {
     using Counters for Counters.Counter;
     // Events
-    event ListingCreated(uint256 listingId);
+    event ListingCreated(uint256 listingId, uint256 marketItemId, uint256 price);
     event MarketItemSold(
         uint256 marketItemId,
         address from,
@@ -23,7 +23,9 @@ contract NFTMarketplace is Wallet {
         string name,
         string description
     );
-    event CollectionNFTMinted(uint256 marketItemId);
+    event AddedMarketItem(uint256 marketItemId);
+    event OfferCreated(uint256 offerId, uint256 marketItemId, uint256 price);
+    event OfferCanceled(uint256 offerId);
 
     // Enums
     enum ListingStatus {
@@ -153,6 +155,11 @@ contract NFTMarketplace is Wallet {
                 collectionId
             );
         }
+        else if(marketItem.collectionId == 0) {
+            marketItem.collectionId = collectionId;
+            marketItemToCollection[marketItem.id] = collectionId;
+            _idToCollection[collectionId].marketItems.push(marketItem.id);
+        }
 
         _listingIds.increment();
         Listing memory listing = Listing(
@@ -167,7 +174,7 @@ contract NFTMarketplace is Wallet {
         _idToListing[listing.id] = listing;
         marketItem.listings.push(listing.id);
 
-        emit ListingCreated(listing.id);
+        emit ListingCreated(listing.id, marketItem.id, price);
         return listing.id;
     }
 
@@ -281,7 +288,7 @@ contract NFTMarketplace is Wallet {
         _idToOffer[offer.id] = offer;
         _userToOffers[msg.sender].push(offer.id);
         marketItem.offers.push(offer.id);
-
+        emit OfferCreated(offer.id, marketItem.id, msg.value);
         return offer.id;
     }
 
@@ -300,6 +307,7 @@ contract NFTMarketplace is Wallet {
         _userToOffersBalance[offer.offerer] -= offer.price;
         offer.status = OfferStatus.Canceled;
 
+        emit OfferCanceled(offer.id);
         return offer.id;
     }
 

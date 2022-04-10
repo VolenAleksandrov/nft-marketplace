@@ -1,6 +1,6 @@
 import React from "react";
 import { Accordion, Button, Container, Image, Table } from "react-bootstrap";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getStatusName } from "src/helpers/utilities";
 import CreateOffer from "./CreateOffer";
 
@@ -40,7 +40,7 @@ const MarketItem = (props: IMarketItemPage) => {
                                     <Accordion.Header>Details</Accordion.Header>
                                     <Accordion.Body>
                                         {marketItem.collection ? (<div>Collection: {marketItem.collection.name}</div>) : null}
-                                        {marketItem.owner ? (<div>Owner: {marketItem.owner}</div>) : null}
+                                        {marketItem.owner ? (<div>Owner: <Link to={"/profile/" + marketItem.owner}>Profile</Link></div>) : null}
                                         {marketItem.nftContract ? (<div>NFT Contract address: {marketItem.nftContract}</div>) : null}
                                         {marketItem.nftContract ? (<div>NFT Contract tokenId: {marketItem.tokenId}</div>) : null}
                                     </Accordion.Body>
@@ -69,8 +69,8 @@ const MarketItem = (props: IMarketItemPage) => {
                                             {marketItem.listings.map((listing: IListing, index: number) => (
                                                 <tr key={index}>
                                                     <td>{listing.id}</td>
-                                                    <td>{listing.seller}</td>
-                                                    <td>{listing.buyer}</td>
+                                                    <td>Seller: <Link to={"/profile/" + listing.seller}>Profile</Link></td>
+                                                    <td>Buyer: <Link to={"/profile/" + listing.buyer}>Profile</Link></td>
                                                     <td>{listing.price} ETH</td>
                                                     <td>{getStatusName(listing.status)}</td>
                                                     <td>
@@ -106,7 +106,7 @@ const MarketItem = (props: IMarketItemPage) => {
                                             {marketItem.offers.map((offer: IOffer, index: number) => (
                                                 <tr key={index}>
                                                     <td>{offer.id}</td>
-                                                    <td>{offer.offerer}</td>
+                                                    <td>Offerer: <Link to={"/profile/" + offer.offerer}>Profile</Link></td>
                                                     <td>{offer.price} ETH</td>
                                                     <td>{getStatusName(offer.status)}</td>
                                                     <td>

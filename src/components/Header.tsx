@@ -95,7 +95,7 @@ const Header = (props: IHeaderProps) => {
             </SActiveChain>
             <Nav className="md-12" variant="pills">
               <Link to="/"><div className='btn'>Market items</div></Link>
-              <Link to="/profile"><div className='btn'>Profile</div></Link>
+              <Link to={"/profile/" + address}><div className='btn'>Profile</div></Link>
             </Nav>
           </Container>
         </Navbar>

@@ -12,7 +12,7 @@ interface IMarketItemsPage {
 }
 const MarketItems = (props: IMarketItemsPage) => {
     const { marketItems, userAddress, buyNFT, createOffer } = props;
-
+    
     return (
         <Container className="row">
             {marketItems && marketItems.length > 0 ? (

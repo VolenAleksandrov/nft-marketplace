@@ -185,7 +185,10 @@ class App extends React.Component<any, any> {
       // Metamask Lock fire an empty accounts array 
       await this.resetApp();
     } else {
+      // await this.resetApp();
       await this.setState({ address: accounts[0] });
+      this.onConnect();
+
     }
   }
 
@@ -244,15 +247,15 @@ class App extends React.Component<any, any> {
               />
               <Routes>
                 <Route
-                  path='/profile'
+                  path='/profile/:profileAddress'
                   element={
                     <Profile
                       mint={this.createNFT}
                       createCollection={this.createCollection}
                       approve={this.approveNFT}
                       createListing={this.createListing}
-                      userCollections={this.contractsSDK.userCollections}
-                      userMarketItems={this.contractsSDK.userMarketItems}
+                      collections={this.contractsSDK.collections}
+                      marketItems={this.contractsSDK.marketItems}
                       userAddress={address}
                     />
                   }
