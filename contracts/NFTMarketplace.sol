@@ -140,10 +140,6 @@ contract NFTMarketplace is Wallet {
             ERC721(nftContractAddress).ownerOf(tokenId) == msg.sender,
             "Marketplace: seller is not the owner!"
         );
-        require(
-            _idToCollection[collectionId].owner == msg.sender,
-            "Marketplace: seller is not the owner of the collection!"
-        );
 
         MarketItem storage marketItem = _idToMarketItem[
             _nftContractToItemIdToMarketItem[nftContractAddress][tokenId]

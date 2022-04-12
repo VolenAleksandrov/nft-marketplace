@@ -105,7 +105,7 @@ const Profile = (props: IProfilePage) => {
                     </>
                 ) : null}
                 <Container className="row">
-                    <h2>All User items</h2>
+                    <h2>All items</h2>
                     {profileItems.map((item: IMarketItem, index: number) => (
                         <Card className="col-md-3" key={index}>
                             <Card.Img variant="top" src={item.image} />
@@ -129,7 +129,7 @@ const Profile = (props: IProfilePage) => {
                         </Card>
                     ))}
                 </Container>
-                <h2>All User collections</h2>
+                <h2>All collections</h2>
                 <Accordion defaultActiveKey="0" alwaysOpen>
                     {profileCollections.length > 0 ? (
                         <>

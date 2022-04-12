@@ -80,7 +80,7 @@ export default class ContractsSDK {
     }
 
     public async updateCollection(id: number, description: string): Promise<any> {
-        const tx = this.marketplace.createNewCollection(id, description);
+        const tx = await this.marketplace.createNewCollection(id, description);
         await tx.wait();
         await this.loadItems();
     }
@@ -112,7 +112,7 @@ export default class ContractsSDK {
     }
 
     public async cancelOffer(offerId: number): Promise<any> {
-        const tx = this.marketplace.cancelOffer(offerId);
+        const tx = await this.marketplace.cancelOffer(offerId);
         await tx.wait();
         await this.loadItems();
     }
@@ -203,6 +203,8 @@ export default class ContractsSDK {
 
     //#endregion READ
     private async loadItems() {
+        this.userListings = [];
+        this.userOffers = [];
         this.collections = await this.getAllCollections();
         this.marketItems = await this.getAllNFTs(this.collections);
     }
